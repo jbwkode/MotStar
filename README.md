@@ -27,10 +27,10 @@ with full formatted previews.
 
 ## Install (from the Release)
 
-1. Go to the **Releases** page and download
-   `MotStar-v0.1.0-macOS.zip`.
-2. Double-click to unzip, then drag **MotStar.app** into your
-   **Applications** folder.
+1. Go to the **Releases** page and download **`MotStar-0.1.0.dmg`**
+   (a `.zip` of the app is also available).
+2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
+   inside the window (or drag it into your Applications folder manually).
 3. **First launch:** the app is signed with an Apple Development identity but
    is **not yet notarized**, so macOS may block it. If you see
    *"MotStar can't be opened"*, right-click (or Ctrl-click) **MotStar.app** →
