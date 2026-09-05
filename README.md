@@ -1,90 +1,103 @@
 # MotStar
 
-Native macOS two-pane document navigator & previewer.
+**MotStar** is a native macOS document navigator, Markdown editor and
+previewer. Browse your folders in a two-pane window, open any file in place —
+Markdown, text, PDF, Office documents, images — and edit `.md`/`.txt` files
+with full formatted previews.
 
-- **Left pane:** recursive, lazily-loaded folder tree. Add any folders from
-  storage; they are remembered between launches.
-- **Right pane:** previews the selected file — Markdown is rendered neatly
-  (formatted **or** raw source via a toolbar toggle), text is plain,
-  PDF/Office/images use Quick Look.
-- **Toolbar:** **Share** (Apple share sheet), **Email** (composes an
-  Outlook message with the file attached), **Print** (standard macOS print
-  dialog) and **Export PDF** (save-as-PDF).
-- **About:** MotStar menu → About MotStar shows the app logo, version and
-  credits.
+![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![Version](https://img.shields.io/badge/release-v0.1.0-green)
 
-## Requirements
+## Features
 
-- macOS 14 (Sonoma) or later
-- Xcode 15+ (for running from source) — built & tested with Xcode 26
-- Microsoft Outlook for Mac is optional: Email uses Outlook when installed
-  and otherwise falls back to the system compose-email sheet
+- **Two-pane file browser** — recursive, lazily loaded folder tree; folder
+  list is remembered between launches; live refresh when files change on disk
+- **Markdown preview** — tables, task lists, strikethrough, footnotes, code
+  highlighting, **Mermaid diagrams**, **KaTeX maths**, emoji shortcodes,
+  Obsidian-style **callouts**, **wikilinks** (`[[note]]`) and **embeds**
+  (`![[image.png]]`) — all rendered **offline**, no network required
+- **Built-in editor** — create, edit and save `.md`/`.txt`; Edit/Preview
+  toggle, dirty-state tracking, markdown format tools, focus mode
+- **Quick Look** for PDF, Office (Word/Excel/PowerPoint) and image files —
+  large images auto-scale to fit
+- **Print & Export as PDF** from any file type
+- **Share** via the Apple share sheet; **Email** the selected file through
+  Microsoft Outlook
+- **Quick-find** (⌘F) across all your folders
+- 100% local: no accounts, no cloud, no telemetry
 
-Dependencies are resolved automatically by SwiftPM on first build
-(swift-markdown — Apple's Markdown parser; used for formatted `.md`
-rendering).
+## Install (from the Release)
 
-## Build & Run
+1. Go to the **Releases** page and download
+   `MotStar-v0.1.0-macOS.zip`.
+2. Double-click to unzip, then drag **MotStar.app** into your
+   **Applications** folder.
+3. **First launch:** the app is signed with an Apple Development identity but
+   is **not yet notarized**, so macOS may block it. If you see
+   *"MotStar can't be opened"*, right-click (or Ctrl-click) **MotStar.app** →
+   **Open** → **Open** again. You only need to do this once.
+4. Launch MotStar, click **Add Folder…** and pick the folders you want to
+   browse.
 
-### Quick start (terminal)
+> Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
+> Notarized distribution is planned for a future release.
+
+### Email via Outlook (optional)
+
+The first time you use **Email**, macOS asks whether MotStar may control
+Microsoft Outlook — click **OK** in the system prompt, then Outlook opens a
+new message with the file attached. If permission was missed, the app guides
+you to *System Settings → Privacy & Security → Automation*.
+
+## Build from source
+
+Requires Xcode (macOS 14+ SDK).
 
 ```sh
+# Run directly from the terminal
 swift run MotStar
-```
 
-### As a proper .app bundle (recommended)
-
-```sh
+# Or build a proper .app bundle (signs with your Apple Development identity
+# if one is installed, otherwise ad-hoc)
 ./scripts/bundle-app.sh
 open build/MotStar.app
 ```
 
-The script builds a release binary, assembles `build/MotStar.app` with an
-Info.plist, and ad-hoc signs it.
+Or open `Package.swift` in Xcode, select the **MotStar** scheme, and Run.
 
-### From Xcode
-
-Open `Package.swift` in Xcode, select the **MotStar** scheme (My Mac), and Run.
-
-## Tests
+### Tests
 
 ```sh
 swift test
 ```
 
-## First-time Email note
+## Keyboard shortcuts
 
-The first Email action prompts macOS: *"MotStar wants to control Microsoft
-Outlook."* Grant it in System Settings → Privacy & Security → Automation.
-If denied, MotStar falls back to the compose-email sheet.
+| Shortcut | Action |
+|---|---|
+| ⌘O / ⌘N / ⇧⌘N | Add folder / New Markdown file / New text file |
+| ⌘S / ⌘E | Save / Toggle Edit-Preview |
+| ⌘P / ⇧⌘E | Print / Export as PDF |
+| ⇧⌘M / ⇧⌘S | Email / Share |
+| ⌘F | Find files in sidebar |
+| ⇧⌘R | Markdown: formatted ↔ raw |
+| ⌥⌘F / ⌥⌘W | Focus mode / Word wrap |
+| ⌘B ⌘I ⌥⌘1-3 ⇧⌘K | Bold / Italic / Headings / Link |
 
 ## Documentation
 
-- `docs/01-product-specification.md` — agreed product specification
-- `docs/02-software-design.md` — architecture, C4, data model, security
-- `docs/adr/ADR-001…007` — architecture decision records
+- [`docs/01-product-specification.md`](docs/01-product-specification.md) —
+  agreed product specification
+- [`docs/02-software-design.md`](docs/02-software-design.md) — architecture,
+  C4 diagrams, data model
+- [`docs/03-md-editor-features.md`](docs/03-md-editor-features.md) — Markdown
+  editor feature inventory & roadmap
+- [`docs/adr/`](docs/adr/) — architecture decision records (ADR-001…009)
+- [`Examples/`](Examples/) — sample documents exercising every renderer
+  feature
 
-## Layout
+## Roadmap
 
-```
-Sources/MotStar/
-  MotStarApp.swift          app entry
-  Models/                   AppState, RootFolder, TreeNode, FileKind (registry)
-  Services/                 PersistenceService, FolderEnumerator, EmailService,
-                            MarkdownHTML (swift-markdown → styled HTML)
-  Views/                    ContentView, SidebarView (tree), PreviewPane,
-                            MarkdownViews (Formatted/Raw .md), QuickLookView
-Tests/MotStarTests/         unit tests (registry, Markdown rendering)
-scripts/bundle-app.sh       .app bundling script
-```
-
-## v1 status
-
-Implemented: two-pane UI, folder picker + persistence, recursive lazy tree
-with colour markers and standard icons, neat formatted Markdown preview with
-Formatted/Raw toggle, plain-text preview, Quick Look for all other types,
-Share (Apple sheet), Email via Outlook with fallback, Print, Export as PDF,
-About window, app icon + logo, missing-folder error states, unit tests.
-
-Roadmap (see design doc §10): sandbox + bookmarks for App Store, FSEvents
-live updates, expanded-state persistence.
+- Notarized Developer ID distribution
+- Full-text content search
+- Line numbers & live split edit/preview
+- App Store distribution (sandbox + security-scoped bookmarks)
