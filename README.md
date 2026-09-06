@@ -39,6 +39,19 @@ with full formatted previews.
 4. Launch MotStar, click **Add Folder…** and pick the folders you want to
    browse.
 
+### Automated install (script)
+
+Download and run **`install-motstar.sh`** from the release, or paste:
+
+```bash
+curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash
+```
+
+The script fetches the latest DMG, installs to /Applications (backing up any
+existing copy), clears the quarantine flag and launches MotStar.
+Pin a version with `VERSION=v0.1.0`. *(Works on public repos/anonymous
+downloads — the repo is currently private.)*
+
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
 > Notarized distribution is planned for a future release.
 
@@ -82,6 +95,7 @@ swift test
 | ⌘F | Find files in sidebar |
 | ⇧⌘R | Markdown: formatted ↔ raw |
 | ⌥⌘F / ⌥⌘W | Focus mode / Word wrap |
+| ⌘, | Settings (file sort order, …) |
 | ⌘B ⌘I ⌥⌘1-3 ⇧⌘K | Bold / Italic / Headings / Link |
 
 ## Documentation

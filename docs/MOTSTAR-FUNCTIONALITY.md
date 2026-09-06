@@ -65,6 +65,10 @@ works offline.
   affected roots after ~0.7 s debounce (visible subtrees re-enumerate).
 - **Rows:** folder = folder icon; file = **coloured marker dot + standard
   SF Symbol icon**. Clicking a file selects it; clicking folders toggles.
+- **Sorting (configurable):** folders always alphabetical first; file
+  ordering is a **Settings (⌘,)** preference — **Newest first** (default)
+  or **Alphabetical (A–Z)**. Applied on every expansion/refresh.
+- **Settings gear** at the bottom-right of the sidebar opens Settings.
 - **Selected row** highlight in accent colour.
 
 ### File-type registry (single source of truth)
@@ -197,6 +201,7 @@ Markdown pages; links open in the default browser via navigation policy).
 | ⌘F | Find files in sidebar |
 | ⇧⌘R | Markdown Formatted ↔ Raw |
 | ⌥⌘F / ⌥⌘W | Focus mode / Word wrap |
+| ⌘, | Settings (file sort order) |
 | ⌘B / ⌘I | Bold / Italic |
 | ⌥⌘1 / 2 / 3 | Heading 1–3 |
 | ⇧⌘K | Insert Link |
@@ -249,7 +254,10 @@ gh release upload v0.1.0 build/MotStar-0.1.0.dmg build/MotStar-v0.1.0-macOS.zip 
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
-- Release v0.1.0 hosts `MotStar-0.1.0.dmg` and `MotStar-v0.1.0-macOS.zip`.
+- Release v0.1.0 hosts `MotStar-0.1.0.dmg`, `MotStar-v0.1.0-macOS.zip` and
+  `install-motstar.sh` (one-line installer; also in `scripts/install.sh`).
+- Install command:
+  `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`
 - 21 passing unit tests cover: file-type registry, HTML generation
   (headings/code/tables/links), image data-URI embedding (relative +
   absolute), footnotes, wikilinks/definition lists.
