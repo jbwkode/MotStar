@@ -57,7 +57,7 @@ private struct AppIconMark: View {
                     .scaledToFit()
             }
         }
-        .frame(height: 18)
+        .frame(height: 27)
         .accessibilityLabel("MotStar")
     }
 }
