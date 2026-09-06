@@ -23,7 +23,7 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("")
         .toolbar {
-            ToolbarItem(placement: .principal) {
+            ToolbarItem(placement: .navigation) {
                 BrandHeader()
             }
         }
@@ -58,7 +58,7 @@ private struct BrandHeader: View {
                     .scaledToFit()
             }
         }
-        .frame(height: 27)
+        .frame(height: 32)
         .accessibilityLabel("MotStar")
     }
 }
