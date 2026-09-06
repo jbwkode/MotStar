@@ -77,8 +77,8 @@ struct AboutView: View {
                     .foregroundStyle(.tint)
             }
         }
-        .frame(width: 128, height: 128)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .frame(maxWidth: 320, maxHeight: 120)
+        .padding(.horizontal, 24)
     }
 
     private func infoRow(label: String, value: String) -> some View {
@@ -95,18 +95,21 @@ struct AboutView: View {
 
 /// Shared loader for the bundled MotStar logo (app resources, then the
 /// SwiftPM resource bundle when running via `swift run` / Xcode).
+/// Prefers the current brand artwork (BrandLogo) over the legacy AboutLogo.
 enum MotStarAssets {
     static func loadLogo() -> NSImage? {
-        if let url = Bundle.main.url(forResource: "AboutLogo", withExtension: "png"),
-           let image = NSImage(contentsOf: url) {
-            return image
+        for name in ["BrandLogo", "AboutLogo"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: "png"),
+               let image = NSImage(contentsOf: url) {
+                return image
+            }
+            #if SWIFT_PACKAGE
+            if let url = Bundle.module.url(forResource: name, withExtension: "png"),
+               let image = NSImage(contentsOf: url) {
+                return image
+            }
+            #endif
         }
-        #if SWIFT_PACKAGE
-        if let url = Bundle.module.url(forResource: "AboutLogo", withExtension: "png"),
-           let image = NSImage(contentsOf: url) {
-            return image
-        }
-        #endif
         return nil
     }
 }
