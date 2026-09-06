@@ -43,22 +43,13 @@ struct ContentView: View {
     }
 }
 
-/// App icon + "MotStar" shown centred in the window title bar. The icon's
-/// opaque background is removed so it blends into the title bar.
+/// MotStar brand logo + name in the window title bar. The logo asset is a
+/// transparent, rounded-corner PNG so it blends with the bar.
 private struct BrandHeader: View {
-    private static let transparentIcon: NSImage? = {
-        guard let icon = NSImage(named: NSImage.applicationIconName) else { return nil }
-        return ImageBackgroundRemoval.transparentBackground(of: icon) ?? icon
-    }()
-
     var body: some View {
         HStack(spacing: 5) {
             Group {
-                if let image = Self.transparentIcon {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                } else if let image = MotStarAssets.loadLogo() {
+                if let image = MotStarAssets.loadLogo() {
                     Image(nsImage: image)
                         .resizable()
                         .scaledToFit()
@@ -68,7 +59,7 @@ private struct BrandHeader: View {
                         .scaledToFit()
                 }
             }
-            .frame(height: 15)
+            .frame(height: 16)
 
             Text("MotStar")
                 .font(.system(size: 13, weight: .semibold))

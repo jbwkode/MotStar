@@ -17,7 +17,9 @@ cp .build/release/MotStar "$APP/Contents/MacOS/MotStar"
 if ls Resources/appicon-source.* >/dev/null 2>&1; then
     SOURCE_ICON=$(ls Resources/appicon-source.* | head -1)
     echo "==> Building app icon from $SOURCE_ICON"
-    ./scripts/make-icon.sh "$SOURCE_ICON" >/dev/null
+    # Pad to a square transparent canvas first (handles wide/rounded artwork).
+    swift scripts/icon-prepare.swift "$SOURCE_ICON" build/appicon-prepared.png >/dev/null
+    ./scripts/make-icon.sh build/appicon-prepared.png >/dev/null
     cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
 
