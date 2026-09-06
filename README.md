@@ -2,10 +2,12 @@
 
 **MotStar** is a native macOS document navigator, Markdown editor and
 previewer. Browse your folders in a two-pane window, open any file in place —
-Markdown, text, PDF, Office documents, images — and edit `.md`/`.txt` files
-with full formatted previews.
+Markdown, text, source code, PDF, Office documents, images — and edit
+`.md`/`.txt` files with full formatted previews.
 
-![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![Version](https://img.shields.io/badge/placeholder-green)
+**Author:** John B. Walsh — [john.b.walsh@gmail.com](mailto:john.b.walsh@gmail.com)
+
+![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg) ![Swift](https://img.shields.io/badge/Swift-5.10-orange)
 
 ## Features
 
@@ -18,6 +20,13 @@ with full formatted previews.
   (`![[image.png]]`) — all rendered **offline**, no network required
 - **Built-in editor** — create, edit and save `.md`/`.txt`; Edit/Preview
   toggle, dirty-state tracking, markdown format tools, focus mode
+- **Syntax-highlighted code viewer** — source files open as readable,
+  colour-coded documents (Swift, Python, JS/TS, C/C++, Go, Rust, shell, …)
+  with the language auto-detected
+- **Document outline** — headings of the current note in a side pane; click
+  to jump the editor or preview to that section
+- **Sidebar file operations** — rename, move to folder, move to trash, reveal
+  in Finder (right-click or File menu)
 - **Quick Look** for PDF, Office (Word/Excel/PowerPoint) and image files —
   large images auto-scale to fit
 - **Print & Export as PDF** from any file type
@@ -49,9 +58,8 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 
 The script fetches the latest DMG, installs to /Applications (backing up any
 existing copy), clears the quarantine flag and launches MotStar.
-Pin a version with `VERSION=placeholder`. *(Works on public repos/anonymous
-downloads — the repo is currently private; use `export GH_TOKEN=$(gh auth token)`
-first while private.)*
+Pin a specific release with `VERSION=v0.3.5`. Anonymous downloads work with no
+setup — no token, no account.
 
 ### Manual install from a DMG (helper)
 
@@ -106,8 +114,11 @@ swift test
 | ⇧⌘M / ⇧⌘S | Email / Share |
 | ⌘F | Find files in sidebar |
 | ⇧⌘R | Markdown: formatted ↔ raw |
+| ⌥⌘O | Show / hide the document outline |
+| ⌘R / ⌘⌫ | Rename selection / Move selection to Trash |
+| ⌘+ / ⌘− / ⌘0 | Zoom in / out / actual size (reader & editor) |
 | ⌥⌘F / ⌥⌘W | Focus mode / Word wrap |
-| ⌘, | Settings (file sort order, …) |
+| ⌘, | Settings (theme, text size, file sort order, …) |
 | ⌘B ⌘I ⌥⌘1-3 ⇧⌘K | Bold / Italic / Headings / Link |
 
 ## Documentation
@@ -121,6 +132,17 @@ swift test
 - [`docs/adr/`](docs/adr/) — architecture decision records (ADR-001…009)
 - [`Examples/`](Examples/) — sample documents exercising every renderer
   feature
+
+## License
+
+MotStar is open source, released under the [MIT License](LICENSE).
+
+Copyright (c) 2026 John B. Walsh — [john.b.walsh@gmail.com](mailto:john.b.walsh@gmail.com)
+
+You are free to use, modify, and distribute the code, provided the copyright
+and permission notice are preserved. The app itself is distributed as signed
+release builds; see the [releases](https://github.com/jbwkode/MotStar/releases)
+page.
 
 ## Roadmap
 

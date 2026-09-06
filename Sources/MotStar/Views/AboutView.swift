@@ -34,6 +34,8 @@ struct AboutView: View {
                 infoRow(label: "Version", value: version)
                 infoRow(label: "Platform", value: "macOS 14+")
                 infoRow(label: "Built with", value: "SwiftUI & swift-markdown")
+                infoRow(label: "Author", value: "John B. Walsh")
+                infoRow(label: "License", value: "MIT (open source)")
             }
             .font(.system(size: 12))
             .padding(.vertical, 16)
@@ -54,13 +56,22 @@ struct AboutView: View {
 
             Spacer(minLength: 18)
 
-            Text("© 2026. All rights reserved.")
+            Text("© 2026 John B. Walsh")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
 
+            Link("john.b.walsh@gmail.com", destination: URL(string: "mailto:john.b.walsh@gmail.com")!)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+
+            Text("Released under the MIT License.")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .padding(.top, 2)
+
             Spacer(minLength: 24)
         }
-        .frame(width: 420, height: 500)
+        .frame(width: 420, height: 540)
         .preferredColorScheme(theme.colorScheme)
     }
 
