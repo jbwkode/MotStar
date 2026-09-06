@@ -9,6 +9,16 @@ Markdown, text, source code, PDF, Office documents, images — and edit
 
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg) ![Swift](https://img.shields.io/badge/Swift-5.10-orange)
 
+## Screenshots
+
+![Browse folders and read formatted Markdown, with an optional document outline](docs/screenshots/reader-preview.png)
+
+![Source files open with syntax highlighting, language auto-detected](docs/screenshots/code-viewer.png)
+
+![Markdown renders fully offline — tables, callouts, Mermaid diagrams and maths](docs/screenshots/formatted-note.png)
+
+![About — MIT licensed with author credits](docs/screenshots/about-window.png)
+
 ## Features
 
 - **Two-pane file browser** — recursive, lazily loaded folder tree; folder

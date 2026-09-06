@@ -15,8 +15,8 @@ VERSION="${VERSION:-latest}"
 APP_NAME="MotStar.app"
 
 # --- GitHub auth -----------------------------------------------------------
-# Public repos need no token. Private repos (like the current MotStar repo)
-# require one: export GH_TOKEN="$(gh auth token)" or set GH_TOKEN yourself.
+# Public repos need no token. If you run a private fork, export a token:
+#   export GH_TOKEN="$(gh auth token)"   (or set GH_TOKEN yourself)
 AUTH=()
 if [ -n "${GH_TOKEN:-}" ]; then
     AUTH=(-H "Authorization: Bearer $GH_TOKEN")
@@ -45,7 +45,7 @@ else
 fi
 
 JSON=$(curl -fsSL "${AUTH[@]}" -H "Accept: application/vnd.github+json" "$API_URL" 2>/dev/null \
-       || { echo "error: could not fetch release info from $API_URL (repo may be private — set GH_TOKEN or export GH_TOKEN=\"\$(gh auth token)\")." >&2; exit 1; })
+       || { echo "error: could not fetch release info from $API_URL (on a private fork set GH_TOKEN=\"\$(gh auth token)\")." >&2; exit 1; })
 
 DMG_URL=""
 if command -v python3 >/dev/null 2>&1; then

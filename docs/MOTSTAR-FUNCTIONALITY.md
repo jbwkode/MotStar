@@ -3,7 +3,7 @@
 **Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.6)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
-**Repo:** `https://github.com/jbwkode/MotStar` (private) — source of truth.
+**Repo:** `https://github.com/jbwkode/MotStar` — source of truth.
 **Platform:** native macOS 14+ (Sonoma), Apple Silicon + Intel. Swift/SwiftUI
 with targeted AppKit bridges. No third-party runtime services; everything
 works offline.
