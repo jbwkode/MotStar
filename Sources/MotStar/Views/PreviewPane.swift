@@ -184,6 +184,12 @@ struct PreviewPane: View {
                                     textOverride: app.draftTextForSelection,
                                     fontSize: app.readingFontSize)
                 }
+            case .code:
+                if app.paneMode == .editor {
+                    editorView(for: url)
+                } else {
+                    CodePreviewView(url: url, textSize: app.readingFontSize)
+                }
             case .image:
                 ImagePreviewView(url: url)
             default:

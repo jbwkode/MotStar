@@ -31,6 +31,19 @@ final class FileTypeRegistryTests: XCTestCase {
         XCTAssertEqual(FileTypeRegistry.kind(for: file("noextension"), isFolder: false), .other)
     }
 
+    func testClassifiesSourceCodeFiles() {
+        let codeFiles = ["main.swift", "util.py", "app.js", "x.ts", "y.tsx", "lib.c",
+                         "main.cpp", "a.h", "b.cs", "go.mod.go", "main.rs", "script.sh",
+                         "style.css", "page.html", "query.sql", "Main.kt", "file.rb"]
+        for name in codeFiles {
+            XCTAssertEqual(FileTypeRegistry.kind(for: file(name), isFolder: false), .code,
+                           "expected .code for \(name)")
+        }
+        // Plain text and markdown stay distinct from code.
+        XCTAssertEqual(FileTypeRegistry.kind(for: file("notes.txt"), isFolder: false), .text)
+        XCTAssertEqual(FileTypeRegistry.kind(for: file("note.md"), isFolder: false), .markdown)
+    }
+
     func testFolderIsFolderRegardlessOfName() {
         XCTAssertEqual(FileTypeRegistry.kind(for: file("Reports"), isFolder: true), .folder)
         XCTAssertEqual(FileTypeRegistry.kind(for: file("notes.txt"), isFolder: true), .folder)

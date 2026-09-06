@@ -332,7 +332,7 @@ enum MarkdownHTML {
 
     private static var resourceCache: [String: String] = [:]
 
-    private static func webResource(named name: String) -> String? {
+    static func webResource(named name: String) -> String? {
         if let cached = resourceCache[name] { return cached }
         let stem = (name as NSString).deletingPathExtension
         let ext = (name as NSString).pathExtension
@@ -391,7 +391,7 @@ enum MarkdownHTML {
         margin: 0;
         padding: 24px 30px 60px;
         font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-        font-size: \(fontSize)px;
+        font-size: \(Int(fontSize))px;
         line-height: 1.65;
         color: #1d1d1f;
         background: #ffffff;

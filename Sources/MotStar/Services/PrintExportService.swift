@@ -67,6 +67,11 @@ enum PrintExportService {
                 throw PrintExportError.cannotReadFile
             }
             return try await renderPaginatedPDF(html: TextHTML.document(text: text))
+        case .code:
+            guard let text = draftText ?? Self.loadText(url) else {
+                throw PrintExportError.cannotReadFile
+            }
+            return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 10))
         case .pdf:
             return try Data(contentsOf: url)
         case .image:

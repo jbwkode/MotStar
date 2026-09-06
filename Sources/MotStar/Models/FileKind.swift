@@ -7,6 +7,7 @@ enum FileKind: String, CaseIterable {
     case folder
     case markdown
     case text
+    case code
     case pdf
     case docx
     case pptx
@@ -22,6 +23,7 @@ enum FileKind: String, CaseIterable {
         case .folder: return nil
         case .markdown: return (0.388, 0.396, 0.945)   // Indigo #6366F1
         case .text, .other: return (0.612, 0.639, 0.686) // Grey #9CA3AF
+        case .code: return (0.961, 0.620, 0.043)       // Amber #F59E0B
         case .pdf: return (0.898, 0.243, 0.243)        // Red #E53E3E
         case .docx: return (0.169, 0.341, 0.604)       // Word blue #2B579A
         case .pptx: return (0.824, 0.278, 0.149)       // PowerPoint orange #D24726
@@ -36,6 +38,7 @@ enum FileKind: String, CaseIterable {
         case .folder: return "folder.fill"
         case .markdown: return "doc.richtext"
         case .text: return "doc.plaintext"
+        case .code: return "chevron.left.forwardslash.chevron.right"
         case .pdf: return "doc.richtext"
         case .docx: return "doc.text"
         case .pptx: return "chart.bar.doc.horizontal"
@@ -65,9 +68,15 @@ enum FileTypeRegistry {
         default: break
         }
 
+        // Source code (programming languages + shell) → .code
+        if codeExtensions.contains(ext) { return .code }
+
         // UTI fallback (handles unusual casing / extended attributes).
         if let uti = UTType(filenameExtension: ext) {
             if uti.conforms(to: .pdf) { return .pdf }
+            // Checked before plain text: source code conforms to plain text,
+            // but should stay distinguishable from notes.
+            if uti.conforms(to: .sourceCode) { return .code }
             if uti.conforms(to: .plainText) { return .text }
             if uti.conforms(to: .image) { return .image }
             if uti.conforms(to: .presentation) { return .pptx }
@@ -76,6 +85,15 @@ enum FileTypeRegistry {
         }
         return .other
     }
+
+    /// Programming-language / shell extensions treated as code files.
+    private static let codeExtensions: Set<String> = [
+        "swift", "kt", "kts", "java", "py", "pyw", "rb", "js", "jsx", "mjs",
+        "ts", "tsx", "c", "h", "m", "cc", "cpp", "cxx", "hpp", "hh", "cs",
+        "go", "rs", "php", "pl", "lua", "r", "scala", "sh", "bash", "zsh",
+        "fish", "ps1", "bat", "cmd", "dart", "groovy", "gradle", "sql",
+        "html", "htm", "css", "scss", "xml", "vue", "svelte", "tf", "hcl"
+    ]
 
     static func kind(for url: URL) -> FileKind {
         let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false

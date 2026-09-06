@@ -166,7 +166,7 @@ final class AppState: ObservableObject {
     // MARK: Kind helpers
 
     static func isEditable(_ kind: FileKind) -> Bool {
-        kind == .markdown || kind == .text
+        kind == .markdown || kind == .text || kind == .code
     }
 
     var selectedKind: FileKind? {
