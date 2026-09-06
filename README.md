@@ -10,7 +10,8 @@ with full formatted previews.
 ## Features
 
 - **Two-pane file browser** — recursive, lazily loaded folder tree; folder
-  list is remembered between launches; live refresh when files change on disk
+  list is remembered between launches; live refresh when files change on disk;
+  configurable file ordering (newest-first or A–Z) in Settings (⌘,)
 - **Markdown preview** — tables, task lists, strikethrough, footnotes, code
   highlighting, **Mermaid diagrams**, **KaTeX maths**, emoji shortcodes,
   Obsidian-style **callouts**, **wikilinks** (`[[note]]`) and **embeds**

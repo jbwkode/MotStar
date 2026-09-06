@@ -1,9 +1,10 @@
 import Foundation
 
 /// Directory scanning for the tree (ADR-006): hidden items excluded, folders
-/// sorted alphabetically first, then files sorted by modification date,
-/// newest first (tie-broken by name). Missing folders return an error state
-/// instead of throwing so an unavailable folder degrades gracefully.
+/// always sorted alphabetically first, then files ordered per the user's
+/// `FileSortMode` preference (newest-first by default, or alphabetical).
+/// Missing folders return an error state instead of throwing so an
+/// unavailable folder degrades gracefully.
 enum FolderEnumerator {
 
     struct Result {
