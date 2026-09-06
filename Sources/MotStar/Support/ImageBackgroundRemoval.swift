@@ -18,8 +18,8 @@ enum ImageBackgroundRemoval {
 
         guard let rep = NSBitmapImageRep(
             bitmapDataPlanes: nil,
-            pixelsW: width,
-            pixelsH: height,
+            pixelsWide: width,
+            pixelsHigh: height,
             bitsPerSample: 8,
             samplesPerPixel: 4,
             hasAlpha: true,
