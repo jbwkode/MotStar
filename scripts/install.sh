@@ -14,6 +14,17 @@ REPO="${REPO:-jbwkode/MotStar}"
 VERSION="${VERSION:-latest}"
 APP_NAME="MotStar.app"
 
+# --- GitHub auth -----------------------------------------------------------
+# Public repos need no token. Private repos (like the current MotStar repo)
+# require one: export GH_TOKEN="$(gh auth token)" or set GH_TOKEN yourself.
+AUTH=()
+if [ -n "${GH_TOKEN:-}" ]; then
+    AUTH=(-H "Authorization: Bearer $GH_TOKEN")
+elif command -v gh >/dev/null 2>&1 && GH_TOKEN_VALUE="$(gh auth token 2>/dev/null || true)" && [ -n "$GH_TOKEN_VALUE" ]; then
+    AUTH=(-H "Authorization: Bearer $GH_TOKEN_VALUE")
+    export GH_TOKEN="$GH_TOKEN_VALUE"
+fi
+
 # --- macOS version gate (MotStar needs macOS 14+) -------------------------
 if ! command -v sw_vers >/dev/null 2>&1; then
     echo "error: this installer is for macOS only." >&2; exit 1
@@ -33,8 +44,8 @@ else
     API_URL="https://api.github.com/repos/${REPO}/releases/tags/${VERSION}"
 fi
 
-JSON=$(curl -fsSL -H "Accept: application/vnd.github+json" "$API_URL" 2>/dev/null \
-       || { echo "error: could not fetch release info from $API_URL (repo may be private)." >&2; exit 1; })
+JSON=$(curl -fsSL "${AUTH[@]}" -H "Accept: application/vnd.github+json" "$API_URL" 2>/dev/null \
+       || { echo "error: could not fetch release info from $API_URL (repo may be private — set GH_TOKEN or export GH_TOKEN=\"\$(gh auth token)\")." >&2; exit 1; })
 
 DMG_URL=""
 if command -v python3 >/dev/null 2>&1; then
@@ -61,7 +72,7 @@ echo "==> Downloading $DMG_URL"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 DMG="$TMP/MotStar.dmg"
-curl -fSL --progress-bar "$DMG_URL" -o "$DMG"
+curl -fSL "${AUTH[@]}" --progress-bar "$DMG_URL" -o "$DMG"
 
 echo "==> Mounting disk image"
 mkdir -p "$TMP/mnt"
