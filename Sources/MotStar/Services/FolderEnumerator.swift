@@ -1,13 +1,21 @@
 import Foundation
 
-/// Directory scanning for the tree (ADR-006): hidden items excluded, sorted
-/// folders-first then files, localized case-insensitive, error instead of
-/// throwing so an unavailable folder degrades gracefully.
+/// Directory scanning for the tree (ADR-006): hidden items excluded, folders
+/// sorted alphabetically first, then files sorted by modification date,
+/// newest first (tie-broken by name). Missing folders return an error state
+/// instead of throwing so an unavailable folder degrades gracefully.
 enum FolderEnumerator {
 
     struct Result {
         var children: [TreeNode] = []
         var error: String?
+    }
+
+    private struct Item {
+        let url: URL
+        let isFolder: Bool
+        let name: String
+        let modified: Date?
     }
 
     static func children(of url: URL) -> Result {
@@ -23,7 +31,7 @@ enum FolderEnumerator {
             return result
         }
 
-        let keys: [URLResourceKey] = [.isDirectoryKey]
+        let keys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey]
         guard let items = try? FileManager.default.contentsOfDirectory(
             at: url,
             includingPropertiesForKeys: keys,
@@ -33,15 +41,39 @@ enum FolderEnumerator {
             return result
         }
 
+        var entries: [Item] = []
         for item in items {
             guard !item.lastPathComponent.hasPrefix(".") else { continue } // hidden files (.git, .DS_Store…)
-            result.children.append(TreeNode(url: item))
+            let values = try? item.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
+            entries.append(Item(
+                url: item,
+                isFolder: values?.isDirectory ?? item.hasDirectoryPath,
+                name: item.lastPathComponent,
+                modified: values?.contentModificationDate
+            ))
         }
 
-        result.children.sort { lhs, rhs in
-            if lhs.isFolder != rhs.isFolder { return lhs.isFolder }
+        entries.sort { lhs, rhs in
+            if lhs.isFolder != rhs.isFolder { return lhs.isFolder } // folders first
+            if lhs.isFolder {
+                // Folders: alphabetical.
+                return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+            }
+            // Files: newest modified first; unknown dates sink to the bottom.
+            switch (lhs.modified, rhs.modified) {
+            case let (l?, r?):
+                if l != r { return l > r }
+            case (nil, _):
+                return false
+            case (_, nil):
+                return true
+            case (nil, nil):
+                break
+            }
             return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
         }
+
+        result.children = entries.map { TreeNode(url: $0.url) }
         return result
     }
 }
