@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.0 — generated 2026-09-06 from the shipped app (v0.1.0)
+**Version:** 1.0 — generated 2026-09-06 from the shipped app (placeholder)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` (private) — source of truth.
@@ -247,14 +247,14 @@ swift test             # 21 unit tests (registry, markdown, footnotes, wiki, ima
 # DMG:
 mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
 ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.1.0.dmg
+hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.2.0.dmg
 # Release upload:
-gh release upload v0.1.0 build/MotStar-0.1.0.dmg build/MotStar-v0.1.0-macOS.zip --clobber
+gh release upload placeholder build/MotStar-0.2.0.dmg build/MotStar-placeholder-macOS.zip --clobber
 ```
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
-- Release v0.1.0 hosts `MotStar-0.1.0.dmg`, `MotStar-v0.1.0-macOS.zip` and
+- Release placeholder hosts `MotStar-0.2.0.dmg`, `MotStar-placeholder-macOS.zip` and
   `install-motstar.sh` (one-line installer; also in `scripts/install.sh`).
 - Install command:
   `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`

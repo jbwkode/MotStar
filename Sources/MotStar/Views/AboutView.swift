@@ -4,10 +4,7 @@ import AppKit
 /// The About window: logo, app name, version and credits.
 /// Opened from the app menu (MotStar → About MotStar).
 struct AboutView: View {
-    private let version: String = {
-        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        return short ?? "0.1.0"
-    }()
+    private var version: String { AppInfo.displayVersion }
 
     var body: some View {
         VStack(spacing: 0) {

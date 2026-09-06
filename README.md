@@ -5,7 +5,7 @@ previewer. Browse your folders in a two-pane window, open any file in place —
 Markdown, text, PDF, Office documents, images — and edit `.md`/`.txt` files
 with full formatted previews.
 
-![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![Version](https://img.shields.io/badge/release-v0.1.0-green)
+![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-blue) ![Version](https://img.shields.io/badge/placeholder-green)
 
 ## Features
 
@@ -28,7 +28,7 @@ with full formatted previews.
 
 ## Install (from the Release)
 
-1. Go to the **Releases** page and download **`MotStar-0.1.0.dmg`**
+1. Go to the **Releases** page and download **`MotStar-0.2.0.dmg`**
    (a `.zip` of the app is also available).
 2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
    inside the window (or drag it into your Applications folder manually).
@@ -49,7 +49,7 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 
 The script fetches the latest DMG, installs to /Applications (backing up any
 existing copy), clears the quarantine flag and launches MotStar.
-Pin a version with `VERSION=v0.1.0`. *(Works on public repos/anonymous
+Pin a version with `VERSION=placeholder`. *(Works on public repos/anonymous
 downloads — the repo is currently private; use `export GH_TOKEN=$(gh auth token)`
 first while private.)*
 
@@ -61,7 +61,7 @@ so you can drag **MotStar.app** into /Applications without Gatekeeper
 interference:
 
 ```bash
-bash allow-dmg.sh ~/Downloads/MotStar-0.1.0.dmg   # or no args = newest in ~/Downloads
+bash allow-dmg.sh ~/Downloads/MotStar-0.2.0.dmg   # or no args = newest in ~/Downloads
 ```
 
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
