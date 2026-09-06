@@ -154,6 +154,19 @@ and permission notice are preserved. The app itself is distributed as signed
 release builds; see the [releases](https://github.com/jbwkode/MotStar/releases)
 page.
 
+## Support & Disclaimer
+
+- **No warranty.** MotStar is provided **"as is", without warranty of any
+  kind** — see the [MIT License](LICENSE). You use it at your own risk.
+- **Best-effort support.** Issues, feature requests and questions are handled
+  through [GitHub Issues](https://github.com/jbwkode/MotStar/issues) on a
+  best-effort basis. There is no SLA or paid support.
+- **Not for critical data.** Like any document tool, keep backups of files you
+  care about; MotStar does not add, remove or rewrite your files beyond the
+  operations you explicitly perform (create / edit / save / rename / move /
+  trash).
+- **Contact.** Author: [john.b.walsh@gmail.com](mailto:john.b.walsh@gmail.com)
+
 ## Roadmap
 
 - Notarized Developer ID distribution

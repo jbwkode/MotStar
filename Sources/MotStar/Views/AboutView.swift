@@ -67,6 +67,12 @@ struct AboutView: View {
             Text("Released under the MIT License.")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
+
+            Text("Free & open source — provided as-is, no warranty. Support: github.com/jbwkode/MotStar")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
                 .padding(.top, 2)
 
             Spacer(minLength: 24)
