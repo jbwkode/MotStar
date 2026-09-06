@@ -43,48 +43,22 @@ struct ContentView: View {
     }
 }
 
-/// MotStar brand glyph + name in the window title bar. The glyph (star
-/// outline + M) is a transparent template image so it adapts to light/dark.
+/// MotStar brand logo shown alone (no text) in the window title bar —
+/// same artwork as the About window, transparent so it blends.
 private struct BrandHeader: View {
-    private static let brandMark: NSImage? = {
-        let candidates = [
-            Bundle.main.url(forResource: "BrandMark", withExtension: "png"),
-            Bundle.module.url(forResource: "BrandMark", withExtension: "png")
-        ]
-        for url in candidates.compactMap({ $0 }) {
-            if let image = NSImage(contentsOf: url) {
-                image.isTemplate = true
-                return image
-            }
-        }
-        return nil
-    }()
-
     var body: some View {
-        HStack(spacing: 5) {
-            Group {
-                if let image = Self.brandMark {
-                    Image(nsImage: image)
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(.primary)
-                } else if let image = MotStarAssets.loadLogo() {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    Image(systemName: "star.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                }
+        Group {
+            if let image = MotStarAssets.loadLogo() {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: "star.circle.fill")
+                    .resizable()
+                    .scaledToFit()
             }
-            .frame(height: 16)
-
-            Text("MotStar")
-                .font(.system(size: 13, weight: .semibold))
         }
-        .accessibilityElement(children: .combine)
+        .frame(height: 18)
         .accessibilityLabel("MotStar")
     }
 }
