@@ -28,7 +28,7 @@ with full formatted previews.
 
 ## Install (from the Release)
 
-1. Go to the **Releases** page and download **`MotStar-0.3.2.dmg`**
+1. Go to the **Releases** page and download **`MotStar-0.3.3.dmg`**
    (a `.zip` of the app is also available).
 2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
    inside the window (or drag it into your Applications folder manually).
@@ -61,7 +61,7 @@ so you can drag **MotStar.app** into /Applications without Gatekeeper
 interference:
 
 ```bash
-bash allow-dmg.sh ~/Downloads/MotStar-0.3.2.dmg   # or no args = newest in ~/Downloads
+bash allow-dmg.sh ~/Downloads/MotStar-0.3.3.dmg   # or no args = newest in ~/Downloads
 ```
 
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
