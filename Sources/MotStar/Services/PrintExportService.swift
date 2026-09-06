@@ -82,20 +82,79 @@ enum PrintExportService {
     }
 
     /// Prints the selected file through the standard macOS print dialog.
+    ///
+    /// Pages are drawn directly from the PDF document (see
+    /// `PDFPagesPrintView`) instead of printing an off-screen PDFView, which
+    /// can produce blank pages when the view has no laid-out frame.
     @MainActor
     static func print(_ url: URL, draftText: String? = nil, wikilinkRoots: [URL] = []) async throws {
         let data = try await pdfData(for: url, draftText: draftText, wikilinkRoots: wikilinkRoots)
-        guard let document = PDFDocument(data: data) else {
+        guard let document = PDFDocument(data: data), document.pageCount > 0 else {
             throw PrintExportError.cannotLoadDocument
         }
-        let pdfView = PDFView()
-        pdfView.document = document
-        pdfView.autoScales = true
+        let printView = PDFPagesPrintView(document: document)
 
-        let operation = NSPrintOperation(view: pdfView)
+        let operation = NSPrintOperation(view: printView)
         operation.showsPrintPanel = true
         operation.showsProgressPanel = true
+        // Match the PDF page exactly — no default letter margins or cropping.
+        operation.printInfo.topMargin = 0
+        operation.printInfo.bottomMargin = 0
+        operation.printInfo.leftMargin = 0
+        operation.printInfo.rightMargin = 0
+        operation.printInfo.horizontalPagination = .fit
+        operation.printInfo.verticalPagination = .fit
         operation.run()
+    }
+
+    /// Prints a PDF document by drawing every page directly — one print page
+    /// per PDF page, laid out at the page's media-box size (1:1, no scaling or
+    /// cropping by an un-laid-out view).
+    private final class PDFPagesPrintView: NSView {
+        private let document: PDFDocument
+        private var pageRects: [NSRect] = []
+
+        init(document: PDFDocument) {
+            self.document = document
+            super.init(frame: .zero)
+
+            var x: CGFloat = 0
+            var y: CGFloat = 0
+            var width: CGFloat = 0
+            for index in 0..<document.pageCount {
+                guard let page = document.page(at: index) else { continue }
+                let bounds = page.bounds(for: .mediaBox)
+                pageRects.append(NSRect(x: x, y: y, width: bounds.width, height: bounds.height))
+                y += bounds.height
+                width = max(width, bounds.width)
+            }
+            frame = NSRect(x: 0, y: 0, width: width, height: max(y, 1))
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+        override func knowsPageRange(_ range: NSRangePointer) -> Bool {
+            guard !pageRects.isEmpty else { return false }
+            range.pointee = NSRange(location: 1, length: pageRects.count)
+            return true
+        }
+
+        override func rectForPage(_ page: Int) -> NSRect {
+            guard pageRects.indices.contains(page - 1) else { return NSRect.zero }
+            return pageRects[page - 1]
+        }
+
+        override func draw(_ dirtyRect: NSRect) {
+            guard let context = NSGraphicsContext.current?.cgContext else { return }
+            for (index, rect) in pageRects.enumerated() {
+                guard rect.intersects(dirtyRect), let page = document.page(at: index) else { continue }
+                context.saveGState()
+                context.translateBy(x: rect.minX, y: rect.minY)
+                page.draw(with: .mediaBox, to: context)
+                context.restoreGState()
+            }
+        }
     }
 
     // MARK: HTML → paginated PDF
