@@ -107,15 +107,24 @@ struct SidebarView: View {
     }
 
     private var addFolderButton: some View {
-        Button {
-            app.showAddFolder = true
-        } label: {
-            Label("Add Folder…", systemImage: "folder.badge.plus")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(8)
-                .contentShape(Rectangle())
+        HStack(spacing: 4) {
+            Button {
+                app.showAddFolder = true
+            } label: {
+                Label("Add Folder…", systemImage: "folder.badge.plus")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .frame(width: 18, height: 18)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Settings (⌘,)")
         }
-        .buttonStyle(.plain)
         .padding(6)
     }
 }
