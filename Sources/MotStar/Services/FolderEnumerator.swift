@@ -67,8 +67,6 @@ enum FolderEnumerator {
                 return false
             case (_, nil):
                 return true
-            case (nil, nil):
-                break
             }
             return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
         }
