@@ -43,21 +43,29 @@ struct ContentView: View {
     }
 }
 
-/// The app icon shown alone at the right-hand side of the title bar.
+/// The app icon shown at the right-hand side of the title bar. Clicking it
+/// minimizes the app window to the Dock.
 private struct AppIconMark: View {
     var body: some View {
-        Group {
-            if let image = NSImage(named: NSImage.applicationIconName) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Image(systemName: "app")
-                    .resizable()
-                    .scaledToFit()
+        Button {
+            NSApp.keyWindow?.miniaturize(nil)
+        } label: {
+            Group {
+                if let image = NSImage(named: NSImage.applicationIconName) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Image(systemName: "app")
+                        .resizable()
+                        .scaledToFit()
+                }
             }
+            .frame(height: 30)
+            .contentShape(Rectangle())
         }
-        .frame(height: 30)
-        .accessibilityLabel("MotStar")
+        .buttonStyle(.plain)
+        .help("Minimize MotStar")
+        .accessibilityLabel("Minimize MotStar")
     }
 }
