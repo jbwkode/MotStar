@@ -23,7 +23,7 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("")
         .toolbar {
-            ToolbarItem(placement: .navigation) {
+            ToolbarItem(placement: .principal) {
                 BrandHeader()
             }
         }
