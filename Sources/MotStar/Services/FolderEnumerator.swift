@@ -56,17 +56,22 @@ enum FolderEnumerator {
         entries.sort { lhs, rhs in
             if lhs.isFolder != rhs.isFolder { return lhs.isFolder } // folders first
             if lhs.isFolder {
-                // Folders: alphabetical.
+                // Folders: always alphabetical.
                 return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
             }
-            // Files: newest modified first; unknown dates sink to the bottom.
-            switch (lhs.modified, rhs.modified) {
-            case let (l?, r?):
-                if l != r { return l > r }
-            case (nil, _):
-                return false
-            case (_, nil):
-                return true
+            // Files: configurable — newest first (default) or alphabetical.
+            switch FileSortMode.current {
+            case .newestFirst:
+                switch (lhs.modified, rhs.modified) {
+                case let (l?, r?):
+                    if l != r { return l > r }
+                case (nil, _):
+                    return false
+                case (_, nil):
+                    return true
+                }
+            case .alphabetical:
+                break
             }
             return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
         }

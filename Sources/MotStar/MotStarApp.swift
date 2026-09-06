@@ -23,6 +23,10 @@ struct MotStarApp: App {
             AboutView()
         }
         .windowResizability(.contentSize)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
