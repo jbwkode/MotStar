@@ -20,6 +20,7 @@ struct FormattedMarkdownView: NSViewRepresentable {
     let url: URL
     var textOverride: String?
     var wikilinkRoots: [URL] = []
+    var textSize: Double = MarkdownHTML.defaultReadingFontSize
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -31,21 +32,29 @@ struct FormattedMarkdownView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         // Let AppState scroll the preview to a heading from the outline pane.
         AppState.shared.previewWebView = webView
-        load(url: url, textOverride: textOverride, into: webView, coordinator: context.coordinator)
+        load(url: url, textOverride: textOverride, textSize: textSize, into: webView, coordinator: context.coordinator)
         return webView
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
-        guard context.coordinator.lastLoadedPath != url.path else { return }
-        load(url: url, textOverride: textOverride, into: webView, coordinator: context.coordinator)
+        let coordinator = context.coordinator
+        let reloadNeeded = coordinator.lastLoadedPath != url.path || coordinator.lastFontSize != textSize
+        guard reloadNeeded else { return }
+        load(url: url, textOverride: textOverride, textSize: textSize, into: webView, coordinator: coordinator)
     }
 
-    private func load(url: URL, textOverride: String?, into webView: WKWebView, coordinator: Coordinator) {
+    private func load(url: URL, textOverride: String?, textSize: Double, into webView: WKWebView, coordinator: Coordinator) {
         let html: String?
         if let textOverride {
-            html = MarkdownHTML.document(markdown: textOverride, baseDirectory: url.deletingLastPathComponent(), wikilinkRoots: wikilinkRoots)
+            html = MarkdownHTML.document(markdown: textOverride,
+                                         baseDirectory: url.deletingLastPathComponent(),
+                                         wikilinkRoots: wikilinkRoots,
+                                         baseFontSize: textSize)
         } else if let text = MarkdownHTML.readText(url) {
-            html = MarkdownHTML.document(markdown: text, baseDirectory: url.deletingLastPathComponent(), wikilinkRoots: wikilinkRoots)
+            html = MarkdownHTML.document(markdown: text,
+                                         baseDirectory: url.deletingLastPathComponent(),
+                                         wikilinkRoots: wikilinkRoots,
+                                         baseFontSize: textSize)
         } else {
             html = nil
         }
@@ -53,15 +62,18 @@ struct FormattedMarkdownView: NSViewRepresentable {
         guard let html else {
             coordinator.showError("Cannot read this Markdown file.", in: webView)
             coordinator.lastLoadedPath = url.path
+            coordinator.lastFontSize = textSize
             return
         }
         coordinator.lastLoadedPath = url.path
+        coordinator.lastFontSize = textSize
         webView.loadHTMLString(html, baseURL: nil)
     }
 
     /// Navigation delegate + load-failure reporting + wikilink bridge.
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var lastLoadedPath: String?
+        var lastFontSize: Double = MarkdownHTML.defaultReadingFontSize
 
         func userContentController(_ userContentController: WKUserContentController,
                                    didReceive message: WKScriptMessage) {
@@ -121,6 +133,7 @@ struct FormattedMarkdownView: NSViewRepresentable {
 struct SourceEditorView: NSViewRepresentable {
     @ObservedObject var document: TextDocument
     var wrap: Bool = true
+    var fontSize: Double = 13
 
     func makeCoordinator() -> Coordinator { Coordinator(document: document) }
 
@@ -135,7 +148,7 @@ struct SourceEditorView: NSViewRepresentable {
         textView.allowsUndo = true
         textView.usesFindBar = true
         textView.isIncrementalSearchingEnabled = true
-        textView.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.textColor = .labelColor
         textView.backgroundColor = .textBackgroundColor
         textView.isAutomaticQuoteSubstitutionEnabled = false
@@ -159,6 +172,10 @@ struct SourceEditorView: NSViewRepresentable {
         // view text differs from the document (e.g. after load/save).
         if textView.string != document.text {
             textView.string = document.text
+        }
+        // Apply font-size changes (zoom) without touching the text.
+        if (textView.font?.pointSize).map(Double.init) != fontSize {
+            textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         }
         applyWrap(textView, wrap: wrap)
     }

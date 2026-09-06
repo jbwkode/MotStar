@@ -78,6 +78,12 @@ final class AppState: ObservableObject {
     @Published var wordWrapEnabled = true
     @Published var showOutline = false
     @Published var outlineHeadings: [OutlineHeading] = []
+    @Published var readingFontSize: Double {
+        didSet { UserDefaults.standard.set(readingFontSize, forKey: Self.readingFontKey) }
+    }
+    @Published var editorFontSize: Double {
+        didSet { UserDefaults.standard.set(editorFontSize, forKey: Self.editorFontKey) }
+    }
 
     /// Weak reference to the live source editor text view (set by
     /// `SourceEditorView`) so markdown-format commands can act on the
@@ -98,7 +104,16 @@ final class AppState: ObservableObject {
     /// Combine subscription keeping the outline in sync with editor typing.
     private var outlineCancellables: Set<AnyCancellable> = []
 
+    static let readingFontKey = "motstar.readingFontSize"
+    static let editorFontKey = "motstar.editorFontSize"
+    static let defaultReadingFontSize: Double = 15
+    static let defaultEditorFontSize: Double = 13
+    private static let fontRange: ClosedRange<Double> = 9...30
+
     init() {
+        let stored = UserDefaults.standard
+        readingFontSize = Self.loadFontSize(key: Self.readingFontKey, fallback: Self.defaultReadingFontSize)
+        editorFontSize = Self.loadFontSize(key: Self.editorFontKey, fallback: Self.defaultEditorFontSize)
         roots = persistence.load().sorted { $0.addedAt < $1.addedAt }
         rebuildRootNodes()
         let initialPaths = roots.map(\.path)
@@ -108,6 +123,14 @@ final class AppState: ObservableObject {
             }
         }
         watcher?.start()
+    }
+
+    /// Reads a persisted font size, clamping to the sane range; 0 (absent)
+    /// falls back to the default.
+    private static func loadFontSize(key: String, fallback: Double) -> Double {
+        let value = UserDefaults.standard.double(forKey: key)
+        guard value >= fontRange.lowerBound, value <= fontRange.upperBound else { return fallback }
+        return value
     }
 
     // MARK: Live external changes (FSEvents)
@@ -712,6 +735,30 @@ final class AppState: ObservableObject {
         })();
         """
         webView.evaluateJavaScript(script, completionHandler: nil)
+    }
+
+    // MARK: Text zoom (reader panes + editor)
+
+    /// Adjusts the font size of the current context: the source editor while
+    /// editing, otherwise the reading panes (formatted/raw preview).
+    func zoomFont(by delta: Double) {
+        if paneMode == .editor {
+            editorFontSize = Self.clampFont(editorFontSize + delta)
+        } else {
+            readingFontSize = Self.clampFont(readingFontSize + delta)
+        }
+    }
+
+    func resetFontZoom() {
+        if paneMode == .editor {
+            editorFontSize = Self.defaultEditorFontSize
+        } else {
+            readingFontSize = Self.defaultReadingFontSize
+        }
+    }
+
+    private static func clampFont(_ value: Double) -> Double {
+        min(max(value, fontRange.lowerBound), fontRange.upperBound)
     }
 
     // MARK: Preview actions (toolbar + menu share these)

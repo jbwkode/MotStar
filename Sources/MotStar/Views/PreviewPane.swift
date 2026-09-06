@@ -103,6 +103,22 @@ struct PreviewPane: View {
                     .help("Show Document Outline (⌥⌘O)")
                     .disabled(app.paneMode == .preview && app.markdownDisplayMode == .raw)
                 }
+
+                Button {
+                    app.zoomFont(by: -1)
+                } label: {
+                    Text("A−")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .help("Zoom Out (⌘−)")
+
+                Button {
+                    app.zoomFont(by: 1)
+                } label: {
+                    Text("A+")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .help("Zoom In (⌘+)")
             } else {
                 Button { } label: { Label("Share", systemImage: "square.and.arrow.up") }
                     .disabled(true)
@@ -153,15 +169,20 @@ struct PreviewPane: View {
                 } else if app.markdownDisplayMode == .formatted {
                     FormattedMarkdownView(url: url,
                                           textOverride: app.draftTextForSelection,
-                                          wikilinkRoots: app.roots.map(\.url))
+                                          wikilinkRoots: app.roots.map(\.url),
+                                          textSize: app.readingFontSize)
                 } else {
-                    TextPreviewView(url: url, textOverride: app.draftTextForSelection)
+                    TextPreviewView(url: url,
+                                    textOverride: app.draftTextForSelection,
+                                    fontSize: app.readingFontSize)
                 }
             case .text:
                 if app.paneMode == .editor {
                     editorView(for: url)
                 } else {
-                    TextPreviewView(url: url, textOverride: app.draftTextForSelection)
+                    TextPreviewView(url: url,
+                                    textOverride: app.draftTextForSelection,
+                                    fontSize: app.readingFontSize)
                 }
             case .image:
                 ImagePreviewView(url: url)
@@ -176,7 +197,7 @@ struct PreviewPane: View {
 
     @ViewBuilder private func editorView(for url: URL) -> some View {
         if let document = app.activeDocument, document.url == url {
-            SourceEditorView(document: document, wrap: app.wordWrapEnabled)
+            SourceEditorView(document: document, wrap: app.wordWrapEnabled, fontSize: app.editorFontSize)
         } else {
             VStack(spacing: 10) {
                 ProgressView()
@@ -266,12 +287,13 @@ struct PreviewPane: View {
 struct TextPreviewView: View {
     let url: URL
     var textOverride: String?
+    var fontSize: Double = 15
 
     var body: some View {
         ScrollView {
             if let text = textOverride ?? Self.loadText(url) {
                 Text(text)
-                    .font(.body.monospaced())
+                    .font(.system(size: fontSize).monospaced())
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(20)

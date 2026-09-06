@@ -26,6 +26,7 @@ struct MotStarApp: App {
 
         Settings {
             SettingsView()
+                .environmentObject(app)
         }
     }
 }
@@ -158,6 +159,26 @@ struct MotStarCommands: Commands {
             }
             .keyboardShortcut("o", modifiers: [.command, .option])
             .disabled(app.selectedKind != .markdown)
+
+            Divider()
+
+            Button("Zoom In") {
+                app.zoomFont(by: 1)
+            }
+            .keyboardShortcut("+", modifiers: .command)
+            .disabled(app.selectedURL == nil)
+
+            Button("Zoom Out") {
+                app.zoomFont(by: -1)
+            }
+            .keyboardShortcut("-", modifiers: .command)
+            .disabled(app.selectedURL == nil)
+
+            Button("Actual Size") {
+                app.resetFontZoom()
+            }
+            .keyboardShortcut("0", modifiers: .command)
+            .disabled(app.selectedURL == nil)
         }
 
         // Format menu: Markdown editing tools

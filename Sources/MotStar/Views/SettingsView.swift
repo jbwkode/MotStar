@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// MotStar preferences (Settings… ⌘,). Currently: file sort order + theme.
+/// MotStar preferences (Settings… ⌘,). Theme, tree sort + text sizes.
 struct SettingsView: View {
     @AppStorage(FileSortMode.storageKey) private var sortMode: FileSortMode = .newestFirst
     @AppStorage(AppTheme.storageKey) private var theme: AppTheme = .system
+    @EnvironmentObject private var app: AppState
 
     var body: some View {
         Form {
@@ -19,6 +20,36 @@ struct SettingsView: View {
                 .help("Choose Light, Dark, or follow the system (⌥ changes apply to every window)")
 
                 Text("Applies to the whole app including the Markdown preview.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Text size") {
+                HStack {
+                    Text("Reading")
+                    Slider(value: $app.readingFontSize, in: 9...30, step: 1) {
+                        Text("Reading")
+                    }
+                    Text("\(Int(app.readingFontSize)) pt")
+                        .font(.body.monospacedDigit())
+                        .frame(width: 38, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Font size of the formatted Markdown and raw-text preview panes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Text("Editor")
+                    Slider(value: $app.editorFontSize, in: 9...30, step: 1) {
+                        Text("Editor")
+                    }
+                    Text("\(Int(app.editorFontSize)) pt")
+                        .font(.body.monospacedDigit())
+                        .frame(width: 38, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Font size of the source editor. Zoom with ⌘+ / ⌘− / ⌘0 in any pane.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -25,14 +25,15 @@ enum MarkdownHTML {
     /// print and PDF export): images embedded, footnotes processed, and the
     /// bundled KaTeX/Mermaid/highlight/emoji/linkify runtimes inlined.
     /// `wikilinkRoots` (Obsidian-style vault folders) enable `[[note]]`
-    /// links and `![[image.png]]` embeds.
-    static func document(markdown: String, baseDirectory: URL, wikilinkRoots: [URL] = []) -> String {
+    /// links and `![[image.png]]` embeds. `baseFontSize` scales the body
+    /// text (headings are em-based, so they scale proportionally).
+    static func document(markdown: String, baseDirectory: URL, wikilinkRoots: [URL] = [], baseFontSize: Double = defaultReadingFontSize) -> String {
         var enhanced = markdown
         enhanced = applyFootnotes(enhanced)
         enhanced = applyWikilinks(enhanced, baseDirectory: baseDirectory, wikilinkRoots: wikilinkRoots)
         enhanced = applyDefinitionLists(enhanced)
         let body = rewritingRelativeImages(HTMLFormatter.format(enhanced), baseDirectory: baseDirectory)
-        return template(body: body, enriched: true)
+        return template(body: body, enriched: true, baseFontSize: baseFontSize)
     }
 
     /// Load a `.md` file (UTF-8, else UTF-16) and render it for display.
@@ -40,6 +41,10 @@ enum MarkdownHTML {
         guard let text = readText(url) else { return nil }
         return document(markdown: text, baseDirectory: url.deletingLastPathComponent())
     }
+
+    /// Body font size (CSS px) used when no explicit size is requested.
+    /// Kept in sync with `AppState.readingFontSize`'s default.
+    static let defaultReadingFontSize: Double = 15
 
     static func readText(_ url: URL) -> String? {
         guard let data = try? Data(contentsOf: url) else { return nil }
@@ -379,13 +384,14 @@ enum MarkdownHTML {
 
     // MARK: Template
 
-    private static let baseCSS = """
+    private static func baseCSS(fontSize: Double) -> String {
+        """
     :root { color-scheme: light dark; }
     body {
         margin: 0;
         padding: 24px 30px 60px;
         font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-        font-size: 15px;
+        font-size: \(fontSize)px;
         line-height: 1.65;
         color: #1d1d1f;
         background: #ffffff;
@@ -507,8 +513,9 @@ enum MarkdownHTML {
     }
     @page { size: A4; margin: 12mm; }
     """
+    }
 
-    private static func template(body: String, enriched: Bool) -> String {
+    private static func template(body: String, enriched: Bool, baseFontSize: Double = defaultReadingFontSize) -> String {
         var extraStyles = ""
         var extraScripts = ""
         if enriched {
@@ -539,7 +546,7 @@ enum MarkdownHTML {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-        \(baseCSS)
+        \(baseCSS(fontSize: baseFontSize))
         </style>
         \(extraStyles)
         </head>
