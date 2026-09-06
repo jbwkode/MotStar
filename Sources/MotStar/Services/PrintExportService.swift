@@ -10,6 +10,7 @@ enum PrintExportError: LocalizedError {
     case cannotLoadDocument
     case renderingFailed(String)
     case thumbnailUnavailable
+    case previewUnavailable(String)
     case timedOut
     case noImageContent
 
@@ -19,6 +20,7 @@ enum PrintExportError: LocalizedError {
         case .cannotLoadDocument: return "The document could not be prepared."
         case .renderingFailed(let detail): return "Rendering failed: \(detail)"
         case .thumbnailUnavailable: return "No preview image could be generated for this file type."
+        case .previewUnavailable(let detail): return detail
         case .timedOut: return "The document took too long to render."
         case .noImageContent: return "The image could not be decoded."
         }
@@ -217,29 +219,11 @@ enum PrintExportService {
     // MARK: Quick Look snapshot → PDF (office & other types)
 
     /// Generates a Quick Look thumbnail and places it on an A4 page.
+    /// Tries a full-size thumbnail first, then a lighter request, then the
+    /// file icon; surfaces a friendly error if Quick Look has nothing.
     @MainActor
     private static func quickLookPDF(url: URL) async throws -> Data {
-        let request = QLThumbnailGenerator.Request(
-            fileAt: url,
-            size: NSSize(width: 2048, height: 2048),
-            scale: 2,
-            representationTypes: [.thumbnail]
-        )
-
-        let representation = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<QLThumbnailRepresentation, Error>) in
-            QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, error in
-                if let rep {
-                    continuation.resume(returning: rep)
-                } else {
-                    continuation.resume(throwing: error ?? PrintExportError.thumbnailUnavailable)
-                }
-            }
-        }
-
-        let image = representation.nsImage
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            throw PrintExportError.thumbnailUnavailable
-        }
+        let image = try await bestQuickLookImage(for: url)
 
         let pageSize = CGSize(width: 595, height: 842) // A4 @ 72 dpi
         let output = NSMutableData()
@@ -256,18 +240,56 @@ enum PrintExportService {
         context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
         context.fill(mediaBox)
 
-        let scale = min((pageSize.width - 60) / CGFloat(cgImage.width),
-                        (pageSize.height - 60) / CGFloat(cgImage.height))
-        let drawSize = CGSize(width: CGFloat(cgImage.width) * scale,
-                              height: CGFloat(cgImage.height) * scale)
+        let scale = min((pageSize.width - 60) / CGFloat(image.width),
+                        (pageSize.height - 60) / CGFloat(image.height))
+        let drawSize = CGSize(width: CGFloat(image.width) * scale,
+                              height: CGFloat(image.height) * scale)
         let origin = CGPoint(x: (pageSize.width - drawSize.width) / 2,
                              y: (pageSize.height - drawSize.height) / 2)
         context.interpolationQuality = .high
-        context.draw(cgImage, in: CGRect(origin: origin, size: drawSize))
+        context.draw(image, in: CGRect(origin: origin, size: drawSize))
 
         context.endPDFPage()
         context.closePDF()
         return output as Data
+    }
+
+    /// Returns the best CGImage Quick Look can produce for a file: full-size
+    /// thumbnail → lighter thumbnail → file icon. Throws a friendly error
+    /// when Quick Look has nothing for the file.
+    @MainActor
+    private static func bestQuickLookImage(for url: URL) async throws -> CGImage {
+        let attempts: [(NSSize, CGFloat, QLThumbnailGenerator.Request.RepresentationTypes)] = [
+            (NSSize(width: 2048, height: 2048), 2, [.thumbnail]),
+            (NSSize(width: 1024, height: 1024), 1, [.thumbnail]),
+            (NSSize(width: 256, height: 256), 1, [.icon])
+        ]
+
+        for (size, scale, types) in attempts {
+            let request = QLThumbnailGenerator.Request(fileAt: url, size: size, scale: scale, representationTypes: types)
+            do {
+                let representation = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<QLThumbnailRepresentation, Error>) in
+                    QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, error in
+                        if let rep {
+                            continuation.resume(returning: rep)
+                        } else {
+                            continuation.resume(throwing: error ?? PrintExportError.thumbnailUnavailable)
+                        }
+                    }
+                }
+                let image = representation.nsImage
+                if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    return cgImage
+                }
+            } catch {
+                // Try the next, lighter representation.
+                continue
+            }
+        }
+
+        throw PrintExportError.previewUnavailable(
+            "Quick Look couldn't produce a preview for this file type. Export/print it from its own app (e.g. Word) instead."
+        )
     }
 }
 
