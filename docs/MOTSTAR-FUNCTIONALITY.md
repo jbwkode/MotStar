@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.4)
+**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.5)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` (private) — source of truth.
@@ -249,17 +249,17 @@ when context doesn't apply.
 
 ```sh
 swift build            # debug
-swift test             # 32 unit tests (registry, markdown, footnotes, wiki, images, PDF export, outlines)
+swift test             # 36 unit tests (registry, markdown, footnotes, wiki, images, PDF export, outlines)
 ./scripts/bundle-app.sh   # release build → build/MotStar.app (signed)
 # DMG:
 mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
 ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.4.dmg
+hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.5.dmg
 # App zip:
-ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.4-macOS.zip
+ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.5-macOS.zip
 # Release upload:
-gh release create v0.3.4 "MotStar 0.3.4" --notes "…"
-gh release upload v0.3.4 build/MotStar-0.3.4.dmg build/MotStar-v0.3.4-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
+gh release create v0.3.5 "MotStar 0.3.5" --notes "…"
+gh release upload v0.3.5 build/MotStar-0.3.5.dmg build/MotStar-v0.3.5-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
 ```
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
@@ -269,10 +269,11 @@ gh release upload v0.3.4 build/MotStar-0.3.4.dmg build/MotStar-v0.3.4-macOS.zip 
   `install-motstar.sh` from `scripts/install.sh`).
 - Install command:
   `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`
-- 32 passing unit tests cover: file-type registry, HTML generation
-  (headings/code/tables/links), image data-URI embedding (relative +
-  absolute), footnotes, wikilinks/definition lists, markdown/text → PDF export,
-  heading-outline parsing.
+- 36 passing unit tests cover: file-type registry (incl. code-file
+  classification), HTML generation (headings/code/tables/links), image
+  data-URI embedding (relative + absolute), footnotes,
+  wikilinks/definition lists, markdown/text → PDF export, heading-outline
+  parsing, code-highlight page generation.
 
 ## 12. Known limitations / roadmap
 
