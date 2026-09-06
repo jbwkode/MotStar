@@ -50,7 +50,19 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 The script fetches the latest DMG, installs to /Applications (backing up any
 existing copy), clears the quarantine flag and launches MotStar.
 Pin a version with `VERSION=v0.1.0`. *(Works on public repos/anonymous
-downloads — the repo is currently private.)*
+downloads — the repo is currently private; use `export GH_TOKEN=$(gh auth token)`
+first while private.)*
+
+### Manual install from a DMG (helper)
+
+Prefer dragging the app yourself? **`allow-dmg.sh`** clears the quarantine
+attributes on the DMG and the app inside it, then opens the volume in Finder
+so you can drag **MotStar.app** into /Applications without Gatekeeper
+interference:
+
+```bash
+bash allow-dmg.sh ~/Downloads/MotStar-0.1.0.dmg   # or no args = newest in ~/Downloads
+```
 
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
 > Notarized distribution is planned for a future release.
