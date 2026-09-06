@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 /// Focus mode collapses the sidebar for distraction-free editing.
 struct ContentView: View {
     @EnvironmentObject private var app: AppState
+    @AppStorage(AppTheme.storageKey) private var theme: AppTheme = .system
 
     private var visibility: Binding<NavigationSplitViewVisibility> {
         Binding(
@@ -26,6 +27,7 @@ struct ContentView: View {
                 BrandHeader()
             }
         }
+        .preferredColorScheme(theme.colorScheme)
         .fileImporter(
             isPresented: $app.showAddFolder,
             allowedContentTypes: [.folder],

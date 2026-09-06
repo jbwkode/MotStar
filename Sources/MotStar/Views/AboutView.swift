@@ -5,6 +5,7 @@ import AppKit
 /// Opened from the app menu (MotStar → About MotStar).
 struct AboutView: View {
     private var version: String { AppInfo.displayVersion }
+    @AppStorage(AppTheme.storageKey) private var theme: AppTheme = .system
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,6 +61,7 @@ struct AboutView: View {
             Spacer(minLength: 24)
         }
         .frame(width: 420, height: 500)
+        .preferredColorScheme(theme.colorScheme)
     }
 
     private var logo: some View {
