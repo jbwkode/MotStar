@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.6)
+**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.7)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` — source of truth.
@@ -254,12 +254,12 @@ swift test             # 36 unit tests (registry, markdown, footnotes, wiki, ima
 # DMG:
 mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
 ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.6.dmg
+hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.7.dmg
 # App zip:
-ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.6-macOS.zip
+ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.7-macOS.zip
 # Release upload:
-gh release create v0.3.6 "MotStar 0.3.6" --notes "…"
-gh release upload v0.3.6 build/MotStar-0.3.6.dmg build/MotStar-v0.3.6-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
+gh release create v0.3.7 "MotStar 0.3.7" --notes "…"
+gh release upload v0.3.7 build/MotStar-0.3.7.dmg build/MotStar-v0.3.7-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
 ```
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes

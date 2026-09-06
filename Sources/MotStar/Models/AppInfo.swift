@@ -5,8 +5,8 @@ import Foundation
 /// (CFBundleShortVersionString / CFBundleVersion) — these constants are the
 /// fallback used when running unbundled (e.g. `swift run`).
 enum AppInfo {
-    static let version = "0.3.6"
-    static let build = "8"
+    static let version = "0.3.7"
+    static let build = "9"
 
     /// Version shown in the About window: bundle value when packaged,
     /// otherwise the source constant.
