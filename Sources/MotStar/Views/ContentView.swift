@@ -43,13 +43,33 @@ struct ContentView: View {
     }
 }
 
-/// MotStar brand logo + name in the window title bar. The logo asset is a
-/// transparent, rounded-corner PNG so it blends with the bar.
+/// MotStar brand glyph + name in the window title bar. The glyph (star
+/// outline + M) is a transparent template image so it adapts to light/dark.
 private struct BrandHeader: View {
+    private static let brandMark: NSImage? = {
+        let candidates = [
+            Bundle.main.url(forResource: "BrandMark", withExtension: "png"),
+            Bundle.module.url(forResource: "BrandMark", withExtension: "png")
+        ]
+        for url in candidates.compactMap({ $0 }) {
+            if let image = NSImage(contentsOf: url) {
+                image.isTemplate = true
+                return image
+            }
+        }
+        return nil
+    }()
+
     var body: some View {
         HStack(spacing: 5) {
             Group {
-                if let image = MotStarAssets.loadLogo() {
+                if let image = Self.brandMark {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .renderingMode(.template)
+                        .foregroundStyle(.primary)
+                } else if let image = MotStarAssets.loadLogo() {
                     Image(nsImage: image)
                         .resizable()
                         .scaledToFit()
