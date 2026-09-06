@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AppKit
+import WebKit
 import UniformTypeIdentifiers
 
 // MARK: - Supporting types
@@ -68,16 +69,24 @@ final class AppState: ObservableObject {
     @Published var markdownDisplayMode: MarkdownDisplayMode = .formatted
     @Published var paneMode: FilePaneMode = .preview
     @Published var expandedPaths: Set<String> = []
-    @Published var activeDocument: TextDocument?
+    @Published var activeDocument: TextDocument? {
+        didSet { bindOutlineToDocument() }
+    }
     @Published var activeAlert: AlertItem?
     @Published var isWorking = false
     @Published var isFocusMode = false
     @Published var wordWrapEnabled = true
+    @Published var showOutline = false
+    @Published var outlineHeadings: [OutlineHeading] = []
 
     /// Weak reference to the live source editor text view (set by
     /// `SourceEditorView`) so markdown-format commands can act on the
     /// current selection.
     weak var activeEditorTextView: NSTextView?
+
+    /// The formatted preview's WKWebView (set by `FormattedMarkdownView`) so
+    /// outline clicks can scroll the rendered page to a heading.
+    weak var previewWebView: WKWebView?
 
     private let persistence = PersistenceService()
     /// Keeps TreeNode instances stable per path so expansion state survives
@@ -86,6 +95,8 @@ final class AppState: ObservableObject {
     /// Live folder watching (FSEvents) keeps the tree fresh on external edits.
     private var watcher: FolderWatcher?
     private var pendingExternalReload: DispatchWorkItem?
+    /// Combine subscription keeping the outline in sync with editor typing.
+    private var outlineCancellables: Set<AnyCancellable> = []
 
     init() {
         roots = persistence.load().sorted { $0.addedAt < $1.addedAt }
@@ -356,6 +367,351 @@ final class AppState: ObservableObject {
                 node.reload()
             }
         }
+    }
+
+    // MARK: Rename / move to trash / move / reveal
+
+    /// Root folders are the workspace containers: rename/trash would move the
+    /// vault itself, so only remove them from the list (see `remove(_:)`).
+    private func isRootPath(_ path: String) -> Bool {
+        roots.contains { $0.path == path }
+    }
+
+    func renameItem(_ node: TreeNode) {
+        renameFile(at: node.url)
+    }
+
+    func trashItem(_ node: TreeNode) {
+        trashFile(at: node.url)
+    }
+
+    func moveItem(_ node: TreeNode) {
+        moveFile(at: node.url)
+    }
+
+    func revealInFinder(_ node: TreeNode) {
+        NSWorkspace.shared.activateFileViewerSelecting([node.url])
+    }
+
+    /// Menu-command entry points operate on the sidebar selection (a file).
+    func renameSelectedItem() {
+        guard let url = selectedURL else { return }
+        renameFile(at: url)
+    }
+
+    func trashSelectedItem() {
+        guard let url = selectedURL else { return }
+        trashFile(at: url)
+    }
+
+    func moveSelectedItem() {
+        guard let url = selectedURL else { return }
+        moveFile(at: url)
+    }
+
+    private func renameFile(at oldURL: URL) {
+        guard !isRootPath(oldURL.path) else { return }
+        // containerPrefix also guards documents nested inside a renamed folder.
+        guard resolveUnsavedDocument(for: oldURL, containerPrefix: true, title: "Rename") else { return }
+
+        let isFolder = (try? oldURL.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+        guard let newName = promptNewName(for: oldURL, isFolder: isFolder) else { return }
+        let newURL = oldURL.deletingLastPathComponent().appendingPathComponent(newName)
+        guard newURL != oldURL else { return }
+        guard !FileManager.default.fileExists(atPath: newURL.path) else {
+            presentError(title: "Rename",
+                         message: "An item named “\(newName)” already exists in this folder.")
+            return
+        }
+
+        do {
+            try FileManager.default.moveItem(at: oldURL, to: newURL)
+        } catch {
+            presentError(title: "Rename", message: error.localizedDescription)
+            return
+        }
+
+        relocateDocumentState(from: oldURL, to: newURL)
+        if isFolder {
+            expandedPaths = remappedExpandedPaths(from: oldURL.path, to: newURL.path)
+        }
+        refreshTreeAndReveal(oldURL: oldURL, newURL: newURL)
+    }
+
+    private func trashFile(at url: URL) {
+        guard !isRootPath(url.path) else { return }
+        guard resolveUnsavedDocument(for: url, containerPrefix: true, title: "Move to Trash") else { return }
+
+        let alert = NSAlert()
+        alert.messageText = "Move “\(url.lastPathComponent)” to Trash?"
+        alert.informativeText = isDirectory(url)
+            ? "The folder and everything in it will be moved to the Trash. You can recover it from there."
+            : "The file will be moved to the Trash. You can recover it from there."
+        alert.addButton(withTitle: "Move to Trash")
+        alert.addButton(withTitle: "Cancel")
+        alert.buttons.first?.hasDestructiveAction = true
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        } catch {
+            presentError(title: "Move to Trash", message: error.localizedDescription)
+            return
+        }
+
+        // Anything open or selected beneath the trashed item is gone.
+        if let doc = activeDocument, isUnder(doc.url, container: url) {
+            activeDocument = nil
+        }
+        if let selected = selectedURL, isUnder(selected, container: url) {
+            selectedURL = nil
+        }
+        expandedPaths = expandedPaths.filter { !isUnder(URL(fileURLWithPath: $0), container: url) }
+        reloadNodeIfVisible(containing: url)
+    }
+
+    private func moveFile(at url: URL) {
+        guard !isRootPath(url.path) else { return }
+        guard resolveUnsavedDocument(for: url, containerPrefix: true, title: "Move") else { return }
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Move Here"
+        panel.message = "Choose a destination folder for “\(url.lastPathComponent)”"
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        let newURL = destination.appendingPathComponent(url.lastPathComponent)
+        let sourceIsFolder = isDirectory(url)
+        if newURL.deletingLastPathComponent() == url.deletingLastPathComponent() { return } // already there
+        if sourceIsFolder, isUnder(destination, container: url) {
+            presentError(title: "Move", message: "A folder cannot be moved into itself.")
+            return
+        }
+        if FileManager.default.fileExists(atPath: newURL.path) {
+            presentError(title: "Move",
+                         message: "An item named “\(url.lastPathComponent)” already exists in the destination folder.")
+            return
+        }
+
+        do {
+            try moveOrCopyFallback(from: url, to: newURL)
+        } catch {
+            presentError(title: "Move", message: error.localizedDescription)
+            return
+        }
+
+        relocateDocumentState(from: url, to: newURL)
+        if sourceIsFolder {
+            expandedPaths = expandedPaths.filter { !isUnder(URL(fileURLWithPath: $0), container: url) }
+        }
+        refreshTreeAndReveal(oldURL: url, newURL: newURL)
+    }
+
+    /// `FileManager.moveItem` fails across volumes; fall back to copy + delete.
+    private func moveOrCopyFallback(from source: URL, to destination: URL) throws {
+        do {
+            try FileManager.default.moveItem(at: source, to: destination)
+        } catch {
+            try FileManager.default.copyItem(at: source, to: destination)
+            try FileManager.default.removeItem(at: source)
+        }
+    }
+
+    private func refreshTreeAndReveal(oldURL: URL, newURL: URL) {
+        reloadNodeIfVisible(containing: oldURL)
+        reloadNodeIfVisible(containing: newURL)
+        if rootFolder(containing: newURL) != nil {
+            revealAndSelect(newURL)
+        } else if selectedURL == newURL {
+            // Moved outside every root: keep the preview open but no tree row.
+            selectedURL = newURL
+        }
+    }
+
+    /// Saves or discards a dirty editor buffer for an item about to be
+    /// renamed/moved/trashed. `containerPrefix` also guards documents nested
+    /// inside a folder being moved/trashed. Returns false when cancelled.
+    private func resolveUnsavedDocument(for url: URL, containerPrefix: Bool, title: String) -> Bool {
+        guard let doc = activeDocument, doc.isDirty else { return true }
+        let affectsDoc = containerPrefix
+            ? isUnder(doc.url, container: url)
+            : doc.url == url
+        guard affectsDoc else { return true }
+        switch confirmUnsavedChanges() {
+        case .alertFirstButtonReturn: // Save
+            do { try doc.save() } catch {
+                presentError(title: title, message: error.localizedDescription)
+                return false
+            }
+            return true
+        case .alertSecondButtonReturn: // Discard
+            return true
+        default: // Cancel
+            return false
+        }
+    }
+
+    /// Keeps selection and the open editor buffer pointing at the moved item.
+    private func relocateDocumentState(from oldURL: URL, to newURL: URL) {
+        if let doc = activeDocument, doc.url == oldURL {
+            let reopened = TextDocument(url: newURL)
+            reopened.load()
+            activeDocument = reopened
+        } else if let doc = activeDocument, isUnder(doc.url, container: oldURL) {
+            // A folder move/rename relocated an open document inside it.
+            let suffix = String(doc.url.path.dropFirst(oldURL.path.count))
+            let relocated = TextDocument(url: URL(fileURLWithPath: newURL.path + suffix))
+            relocated.load()
+            activeDocument = relocated
+        }
+        if selectedURL == oldURL {
+            selectedURL = newURL
+        } else if let selected = selectedURL, isUnder(selected, container: oldURL) {
+            let suffix = String(selected.path.dropFirst(oldURL.path.count))
+            selectedURL = URL(fileURLWithPath: newURL.path + suffix)
+        }
+    }
+
+    private func remappedExpandedPaths(from oldPath: String, to newPath: String) -> Set<String> {
+        var remapped: Set<String> = []
+        for path in expandedPaths {
+            if path == oldPath {
+                remapped.insert(newPath)
+            } else if path.hasPrefix(oldPath + "/") {
+                remapped.insert(newPath + String(path.dropFirst(oldPath.count)))
+            } else {
+                remapped.insert(path)
+            }
+        }
+        return remapped
+    }
+
+    private func isUnder(_ url: URL, container: URL) -> Bool {
+        url.path == container.path || url.path.hasPrefix(container.path + "/")
+    }
+
+    private func isDirectory(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+    }
+
+    /// Finder-style rename prompt: pre-fills the base name (extension kept
+    /// intact), returns the full new file name or nil on cancel/no-op.
+    private func promptNewName(for url: URL, isFolder: Bool) -> String? {
+        let originalName = url.lastPathComponent
+        let prefill: String
+        if !isFolder, !url.pathExtension.isEmpty {
+            prefill = url.deletingPathExtension().lastPathComponent
+        } else {
+            prefill = originalName
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Rename “\(originalName)”"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
+        field.stringValue = prefill
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+
+        var typed = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !typed.isEmpty, typed != ".", typed != "..", !typed.contains("/") else { return nil }
+        // Keep the original extension when the user only edited the base name.
+        let ext = url.pathExtension
+        if !ext.isEmpty, !typed.contains(".") {
+            typed += "." + ext
+        }
+        return typed == originalName ? nil : typed
+    }
+
+    private func presentError(title: String, message: String) {
+        activeAlert = AlertItem(title: title, message: message)
+    }
+
+    // MARK: Document outline
+
+    /// The outline pane applies to Markdown only, and only in the editor or a
+    /// formatted preview (raw text and other file kinds have no anchors).
+    var outlineIsApplicable: Bool {
+        guard selectedKind == .markdown else { return false }
+        return paneMode == .editor || markdownDisplayMode == .formatted
+    }
+
+    func toggleOutline() {
+        showOutline.toggle()
+        if showOutline { refreshOutline() }
+    }
+
+    /// Text the outline reflects: the live editor draft when one is open for
+    /// the selection, otherwise the file on disk (matching the preview).
+    private var outlineSourceText: String? {
+        if let doc = activeDocument, doc.url == selectedURL {
+            return doc.text
+        }
+        guard let url = selectedURL else { return nil }
+        return MarkdownHTML.readText(url)
+    }
+
+    private func refreshOutline() {
+        guard showOutline, outlineIsApplicable else {
+            outlineHeadings = []
+            return
+        }
+        outlineHeadings = MarkdownOutline.parse(outlineSourceText ?? "")
+    }
+
+    /// Keeps the outline in sync with the live draft while typing (debounced).
+    private func bindOutlineToDocument() {
+        outlineCancellables.removeAll()
+        if let doc = activeDocument {
+            doc.objectWillChange
+                .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
+                .sink { [weak self] _ in self?.refreshOutline() }
+                .store(in: &outlineCancellables)
+        }
+        refreshOutline()
+    }
+
+    /// Outline click: scrolls the editor to the heading's source line, or the
+    /// formatted preview to the heading element (row order matches DOM order).
+    func jumpToOutlineHeading(at index: Int, line: Int) {
+        if paneMode == .editor {
+            scrollEditor(toLine: line)
+        } else if markdownDisplayMode == .formatted {
+            scrollPreview(toOutlineIndex: index)
+        }
+    }
+
+    private func scrollEditor(toLine line: Int) {
+        guard let textView = activeEditorTextView else { return }
+        let ns = textView.string as NSString
+        var idx = 0
+        var current = 1
+        while current < line, idx < ns.length {
+            let range = ns.lineRange(for: NSRange(location: idx, length: 0))
+            idx = NSMaxRange(range)
+            current += 1
+        }
+        guard line == 1 || current == line else { return }
+        let target = NSRange(location: min(idx, ns.length), length: 0)
+        textView.scrollRangeToVisible(target)
+        textView.setSelectedRange(target)
+        textView.window?.makeFirstResponder(textView)
+    }
+
+    private func scrollPreview(toOutlineIndex index: Int) {
+        guard let webView = previewWebView else { return }
+        let script = """
+        (function(){
+          var hs = document.querySelectorAll('h1,h2,h3,h4,h5,h6');
+          if (hs[\(index)]) { hs[\(index)].scrollIntoView({block:'start'}); return true; }
+          return false;
+        })();
+        """
+        webView.evaluateJavaScript(script, completionHandler: nil)
     }
 
     // MARK: Preview actions (toolbar + menu share these)

@@ -93,6 +93,16 @@ struct PreviewPane: View {
                     .frame(maxWidth: 170)
                     .help("Show formatted Markdown or the raw source (⇧⌘R)")
                 }
+
+                if app.selectedKind == .markdown {
+                    Button {
+                        app.toggleOutline()
+                    } label: {
+                        Image(systemName: "list.bullet.indent")
+                    }
+                    .help("Show Document Outline (⌥⌘O)")
+                    .disabled(app.paneMode == .preview && app.markdownDisplayMode == .raw)
+                }
             } else {
                 Button { } label: { Label("Share", systemImage: "square.and.arrow.up") }
                     .disabled(true)

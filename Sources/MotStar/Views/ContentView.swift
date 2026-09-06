@@ -14,6 +14,16 @@ struct ContentView: View {
         )
     }
 
+    /// Trailing outline pane: shown for Markdown in the editor or a formatted
+    /// preview. The binding is read-only on collapse — `showOutline` stays
+    /// true so re-opening happens when the user returns to Markdown.
+    private var outlineBinding: Binding<Bool> {
+        Binding(
+            get: { app.showOutline && app.outlineIsApplicable },
+            set: { app.showOutline = $0 }
+        )
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: visibility) {
             SidebarView()
@@ -21,6 +31,9 @@ struct ContentView: View {
             PreviewPane()
         }
         .navigationSplitViewStyle(.balanced)
+        .inspector(isPresented: outlineBinding) {
+            OutlinePane()
+        }
         .navigationTitle("")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

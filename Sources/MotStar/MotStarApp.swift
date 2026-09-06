@@ -101,6 +101,25 @@ struct MotStarCommands: Commands {
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
             .disabled(app.selectedURL == nil)
+
+            Divider()
+
+            Button("Rename Selected File…") {
+                app.renameSelectedItem()
+            }
+            .keyboardShortcut("r", modifiers: .command)
+            .disabled(app.selectedURL == nil)
+
+            Button("Move Selected File to Folder…") {
+                app.moveSelectedItem()
+            }
+            .disabled(app.selectedURL == nil)
+
+            Button("Move Selected File to Trash", role: .destructive) {
+                app.trashSelectedItem()
+            }
+            .keyboardShortcut(.delete, modifiers: .command)
+            .disabled(app.selectedURL == nil)
         }
 
         // Edit menu: quick-find in the sidebar (⌘F). While the source editor
@@ -133,6 +152,12 @@ struct MotStarCommands: Commands {
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
             .disabled(app.selectedKind != .markdown || app.paneMode != .preview)
+
+            Button("Show Document Outline") {
+                app.toggleOutline()
+            }
+            .keyboardShortcut("o", modifiers: [.command, .option])
+            .disabled(app.selectedKind != .markdown)
         }
 
         // Format menu: Markdown editing tools

@@ -215,8 +215,8 @@ struct FolderDisclosure: View {
         }
     }
 
-    private var rowLabel: some View {
-        HStack(spacing: 6) {
+    @ViewBuilder private var rowLabel: some View {
+        let label = HStack(spacing: 6) {
             Image(systemName: node.kind.symbolName)
                 .foregroundStyle(.tint)
                 .frame(width: 16)
@@ -226,6 +226,23 @@ struct FolderDisclosure: View {
                 .foregroundStyle(node.loadError == nil ? .primary : .secondary)
         }
         .padding(.vertical, 1)
+
+        if isRoot {
+            label // root folders: the tree list supplies the Remove context menu
+        } else {
+            label.contextMenu {
+                Button("Rename…") { app.renameItem(node) }
+                Button("Move to Folder…") { app.moveItem(node) }
+                Divider()
+                Button("Reveal in Finder") { app.revealInFinder(node) }
+                Divider()
+                Button("Move to Trash", role: .destructive) { app.trashItem(node) }
+            }
+        }
+    }
+
+    private var isRoot: Bool {
+        app.roots.contains { $0.path == node.url.path }
     }
 }
 
@@ -263,6 +280,14 @@ struct FileRow: View {
             }
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button("Rename…") { app.renameItem(node) }
+            Button("Move to Folder…") { app.moveItem(node) }
+            Divider()
+            Button("Reveal in Finder") { app.revealInFinder(node) }
+            Divider()
+            Button("Move to Trash", role: .destructive) { app.trashItem(node) }
+        }
     }
 
     @ViewBuilder private var marker: some View {

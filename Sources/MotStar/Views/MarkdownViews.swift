@@ -29,6 +29,8 @@ struct FormattedMarkdownView: NSViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        // Let AppState scroll the preview to a heading from the outline pane.
+        AppState.shared.previewWebView = webView
         load(url: url, textOverride: textOverride, into: webView, coordinator: context.coordinator)
         return webView
     }
