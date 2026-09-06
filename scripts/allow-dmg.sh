@@ -8,7 +8,7 @@
 #
 # Usage:
 #   bash allow-dmg.sh                          # uses the newest MotStar DMG in ~/Downloads
-#   bash allow-dmg.sh /path/to/MotStar-0.3.5.dmg
+#   bash allow-dmg.sh /path/to/MotStar-0.3.6.dmg
 set -euo pipefail
 
 DMG="${1:-}"
@@ -17,7 +17,7 @@ if [ -z "$DMG" ]; then
 fi
 if [ -z "$DMG" ] || [ ! -f "$DMG" ]; then
     echo "error: no MotStar DMG found. Pass a path, e.g." >&2
-    echo "  bash allow-dmg.sh ~/Downloads/MotStar-0.3.5.dmg" >&2
+    echo "  bash allow-dmg.sh ~/Downloads/MotStar-0.3.6.dmg" >&2
     exit 1
 fi
 DMG="$(cd "$(dirname "$DMG")" && pwd)/$(basename "$DMG")"
