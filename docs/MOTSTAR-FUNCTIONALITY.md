@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.0 — generated 2026-09-06 from the shipped app (placeholder)
+**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.0)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` (private) — source of truth.
@@ -15,7 +15,10 @@ works offline.
 - **Name:** MotStar (display name, bundle id `com.motstar.mac`)
 - **Type:** single-window, two-pane desktop document navigator + Markdown
   editor + previewer
-- **Icon:** custom generated artwork; About window shows the same logo
+- **Branding assets (v0.3.0):** Dock/Finder tile (`appicon-source.*`, full-
+  bleed for opaque artwork), About-window logo (transparent PNG), clickable
+  app-icon in the title-bar right edge that **minimizes** the window
+- **Icon:** custom generated artwork; About window shows the brand logo
 - **Signing:** Apple Development identity (Team `U6PYFJD9QA`) via bundle
   script; falls back to ad-hoc. Not notarized yet.
 
@@ -45,9 +48,13 @@ works offline.
 
 - One window, `NavigationSplitView`: **left = file tree**, **right =
   preview/editor** (resizable).
-- Title bar shows app title text (no custom branding).
+- Title bar: window title text suppressed; the **app icon is shown at the
+  right edge and clicking it minimizes** the window to the Dock (⌘M style
+  action without the shortcut).
 - **Focus mode** (⌥⌘F): collapses the sidebar (`columnVisibility .detailOnly`)
   for distraction-free editing.
+- **Appearance themes (Settings, ⌘,):** System / Light / Dark applied to
+  every window including the Markdown preview (CSS `prefers-color-scheme`).
 
 ## 4. Left pane — folder tree
 
@@ -247,14 +254,14 @@ swift test             # 21 unit tests (registry, markdown, footnotes, wiki, ima
 # DMG:
 mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
 ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.2.0.dmg
+hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.0.dmg
 # Release upload:
-gh release upload placeholder build/MotStar-0.2.0.dmg build/MotStar-placeholder-macOS.zip --clobber
+gh release upload placeholder build/MotStar-0.3.0.dmg build/MotStar-placeholder-macOS.zip --clobber
 ```
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
-- Release placeholder hosts `MotStar-0.2.0.dmg`, `MotStar-placeholder-macOS.zip` and
+- Release placeholder hosts `MotStar-0.3.0.dmg`, `MotStar-placeholder-macOS.zip` and
   `install-motstar.sh` (one-line installer; also in `scripts/install.sh`).
 - Install command:
   `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`
