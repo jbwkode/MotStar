@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.0)
+**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.1)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` (private) — source of truth.
@@ -249,25 +249,29 @@ when context doesn't apply.
 
 ```sh
 swift build            # debug
-swift test             # 21 unit tests (registry, markdown, footnotes, wiki, images)
+swift test             # 24 unit tests (registry, markdown, footnotes, wiki, images, PDF export)
 ./scripts/bundle-app.sh   # release build → build/MotStar.app (signed)
 # DMG:
 mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
 ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.0.dmg
+hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.1.dmg
+# App zip:
+ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.1-macOS.zip
 # Release upload:
-gh release upload placeholder build/MotStar-0.3.0.dmg build/MotStar-placeholder-macOS.zip --clobber
+gh release create v0.3.1 "MotStar 0.3.1" --notes "…"
+gh release upload v0.3.1 build/MotStar-0.3.1.dmg build/MotStar-v0.3.1-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
 ```
 
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
-- Release placeholder hosts `MotStar-0.3.0.dmg`, `MotStar-placeholder-macOS.zip` and
-  `install-motstar.sh` (one-line installer; also in `scripts/install.sh`).
+- Each versioned release hosts `MotStar-<ver>.dmg`, `MotStar-v<ver>-macOS.zip`,
+  `allow-dmg.sh` and `install.sh` (one-line installer; asset uploaded as
+  `install-motstar.sh` from `scripts/install.sh`).
 - Install command:
   `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`
-- 21 passing unit tests cover: file-type registry, HTML generation
+- 24 passing unit tests cover: file-type registry, HTML generation
   (headings/code/tables/links), image data-URI embedding (relative +
-  absolute), footnotes, wikilinks/definition lists.
+  absolute), footnotes, wikilinks/definition lists, markdown/text → PDF export.
 
 ## 12. Known limitations / roadmap
 

@@ -5,7 +5,7 @@
 #   curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash
 #
 # Or with a pinned version:
-#   VERSION=v0.3.0 bash <(curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh)
+#   VERSION=v0.3.1 bash <(curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh)
 #
 # Env: REPO=jboss/name  VERSION=latest|vX.Y.Z
 set -euo pipefail
