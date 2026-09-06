@@ -331,16 +331,40 @@ enum MarkdownHTML {
         if let cached = resourceCache[name] { return cached }
         let stem = (name as NSString).deletingPathExtension
         let ext = (name as NSString).pathExtension
-        let candidates = [
-            Bundle.main.url(forResource: stem, withExtension: ext, subdirectory: "web"),
-            Bundle.module.url(forResource: stem, withExtension: ext, subdirectory: "web")
-        ]
-        for url in candidates.compactMap({ $0 }) {
-            if let text = try? String(contentsOf: url, encoding: .utf8) {
-                // Never let "</script" terminate an inline script block.
-                let safe = text.replacingOccurrences(of: "</script", with: "<\\/script")
-                resourceCache[name] = safe
-                return safe
+
+        // The release .app (scripts/bundle-app.sh) copies the web assets straight
+        // into Contents/Resources/web, so Bundle.main is authoritative there.
+        // `swift run` / Xcode SPM builds instead nest them in the generated
+        // "MotStar_MotStar.bundle". That bundle is located manually below:
+        // referencing the synthesized Bundle.module would trap (fatalError)
+        // because the resource bundle is NOT shipped inside the .app.
+        var url = Bundle.main.url(forResource: stem, withExtension: ext, subdirectory: "web")
+        if url == nil {
+            url = spmResourceBundleURL(forResource: stem, withExtension: ext, subdirectory: "web")
+        }
+        guard let url,
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        // Never let "</script" terminate an inline script block.
+        let safe = text.replacingOccurrences(of: "</script", with: "<\\/script")
+        resourceCache[name] = safe
+        return safe
+    }
+
+    /// Locates a file inside the SwiftPM-processed resource bundle
+    /// (`<Package>_<Target>.bundle`) without touching the synthesized
+    /// `Bundle.module`, which traps when that bundle is absent (as in the
+    /// packaged .app — see `webResource(named:)` above).
+    private static func spmResourceBundleURL(forResource stem: String, withExtension ext: String, subdirectory: String?) -> URL? {
+        let bundleName = "MotStar_MotStar.bundle"
+        let bases = [
+            Bundle.main.resourceURL,
+            Bundle.main.executableURL?.deletingLastPathComponent()
+        ].compactMap { $0 }
+        for base in bases {
+            let bundleURL = base.appendingPathComponent(bundleName)
+            if let bundle = Bundle(url: bundleURL),
+               let url = bundle.url(forResource: stem, withExtension: ext, subdirectory: subdirectory) {
+                return url
             }
         }
         return nil
