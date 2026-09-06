@@ -1,0 +1,31 @@
+# sample-config.txt - exercises tabs, symbols and long lines
+
+[editor]
+wrap        = true
+font        = "SF Mono, 13pt"
+theme       = system        # system | light | dark
+sort_files  = newestFirst   # newestFirst | alphabetical
+
+[renderer]
+mermaid     = on
+katex       = on
+highlight   = on
+callouts    = on
+wikilinks   = on
+
+[email]
+client      = Microsoft Outlook
+permission  = granted (System Settings > Privacy & Security > Automation)
+
+[ui]
+focus_key   = Option+Cmd+F
+settings    = Cmd+,          # gear icon bottom-right of the sidebar
+minimize    = click app icon in the title bar (right)
+
+Some unicode to check rendering: café, naïve, résumé — 中文測試 — español.
+Pipe | asterisk * hash # and $dollars$ to verify nothing gets mangled.
+
+This paragraph is intentionally long so you can test word-wrap toggling
+(Cmd+W) and horizontal scrolling in the editor - it goes on and on and on
+until you can clearly see the difference between wrapped and non-wrapped
+lines in the source editor view.

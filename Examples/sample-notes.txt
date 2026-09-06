@@ -1,0 +1,19 @@
+MotStar sample notes
+====================
+
+Welcome to MotStar. This plain text file exercises the text preview and
+the source editor.
+
+What to try:
+1. Select this file -> formatted? No: .txt files show a plain monospaced
+   preview (Text Preview).
+2. Click the Edit segment (or press Cmd+E) to switch into the editor.
+3. Make changes, then press Cmd+S to save (the file on disk updates).
+4. Press Cmd+E again to preview your saved draft.
+
+Tip: Cmd+W toggles word wrap, Option+Cmd+F toggles focus mode, and the
+sidebar search (Cmd+F) finds this file by name.
+
+- MotStar is a two-pane navigator for folders you choose.
+- Coloured dots identify file types (txt = grey).
+- Use the Print (Cmd+P) and Export PDF (Shift+Cmd+E) buttons on any file.

@@ -1,0 +1,11 @@
+CHANGELOG-ish plain log
+2026-09-01 09:12  Started planning
+2026-09-02 14:30  Wrote the specification
+2026-09-03 10:05  Built the first prototype
+2026-09-04 16:44  Added the editor + preview toggle
+2026-09-05 11:20  Mermaid, KaTeX and callouts in preview
+2026-09-06 08:33  Configurable sorting, themes, installer scripts
+2026-09-06 12:37  Released v0.3.x
+
+Status: active development
+Next milestone: notarized distribution
