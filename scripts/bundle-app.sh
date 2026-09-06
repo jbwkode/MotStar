@@ -17,8 +17,15 @@ cp .build/release/MotStar "$APP/Contents/MacOS/MotStar"
 if ls Resources/appicon-source.* >/dev/null 2>&1; then
     SOURCE_ICON=$(ls Resources/appicon-source.* | head -1)
     echo "==> Building app icon from $SOURCE_ICON"
-    # Pad to a square transparent canvas first (handles wide/rounded artwork).
-    swift scripts/icon-prepare.swift "$SOURCE_ICON" build/appicon-prepared.png >/dev/null
+    HAS_ALPHA=$(sips -g hasAlpha "$SOURCE_ICON" 2>/dev/null | awk '{print $2}')
+    if [ "$HAS_ALPHA" = "yes" ]; then
+        # Transparent artwork (e.g. floating logos): pad to a square canvas.
+        swift scripts/icon-prepare.swift "$SOURCE_ICON" build/appicon-prepared.png >/dev/null
+        echo "    (transparent source — padded to square)"
+    else
+        # Opaque artwork (full-bleed tiles): copy as-is; make-icon crops square.
+        cp "$SOURCE_ICON" build/appicon-prepared.png
+    fi
     ./scripts/make-icon.sh build/appicon-prepared.png >/dev/null
     cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
