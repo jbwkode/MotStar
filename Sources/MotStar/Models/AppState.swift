@@ -443,6 +443,48 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Exports the selected Markdown/text file as a self-contained HTML
+    /// document (all styles and renderers inlined, images embedded).
+    func exportSelectedFileAsHTML() {
+        guard let url = selectedURL, let kind = selectedKind,
+              Self.isEditable(kind) else { return }
+
+        let html: String
+        if kind == .markdown {
+            let text = draftTextForSelection ?? MarkdownHTML.readText(url) ?? ""
+            html = MarkdownHTML.document(markdown: text,
+                                         baseDirectory: url.deletingLastPathComponent(),
+                                         wikilinkRoots: roots.map(\.url))
+        } else {
+            let text = draftTextForSelection ?? TextFileIO.read(url) ?? ""
+            html = TextHTML.document(text: text)
+        }
+
+        isWorking = true
+        Task {
+            defer { isWorking = false }
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.html]
+            panel.nameFieldStringValue = url.deletingPathExtension().lastPathComponent + ".html"
+            panel.canCreateDirectories = true
+            let response = panel.runModal()
+            guard response == .OK, let destination = panel.url else { return }
+            do {
+                try html.write(to: destination, atomically: true, encoding: .utf8)
+                let alert = NSAlert()
+                alert.messageText = "HTML exported"
+                alert.informativeText = "Saved to \(destination.lastPathComponent). Open it in a browser?"
+                alert.addButton(withTitle: "Open in Browser")
+                alert.addButton(withTitle: "Done")
+                if alert.runModal() == .alertFirstButtonReturn {
+                    NSWorkspace.shared.open(destination)
+                }
+            } catch {
+                activeAlert = AlertItem(title: "Export HTML", message: error.localizedDescription)
+            }
+        }
+    }
+
     func shareSelectedFile() {
         guard let url = selectedURL else { return }
         let picker = NSSharingServicePicker(items: [url])

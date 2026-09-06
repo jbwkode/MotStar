@@ -84,6 +84,12 @@ struct MotStarCommands: Commands {
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .disabled(app.selectedURL == nil || app.isWorking)
 
+            Button("Export Selected File as HTML…") {
+                app.exportSelectedFileAsHTML()
+            }
+            .keyboardShortcut("h", modifiers: [.command, .shift])
+            .disabled(!app.isSelectionEditable || app.isWorking)
+
             Button("Email Selected File…") {
                 app.emailSelectedFile()
             }
