@@ -23,8 +23,8 @@ struct ContentView: View {
         .navigationSplitViewStyle(.balanced)
         .navigationTitle("")
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                BrandHeader()
+            ToolbarItem(placement: .primaryAction) {
+                AppIconMark()
             }
         }
         .preferredColorScheme(theme.colorScheme)
@@ -43,22 +43,21 @@ struct ContentView: View {
     }
 }
 
-/// MotStar brand logo shown alone (no text) in the window title bar —
-/// same artwork as the About window, transparent so it blends.
-private struct BrandHeader: View {
+/// The app icon shown alone at the right-hand side of the title bar.
+private struct AppIconMark: View {
     var body: some View {
         Group {
-            if let image = MotStarAssets.loadLogo() {
+            if let image = NSImage(named: NSImage.applicationIconName) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
             } else {
-                Image(systemName: "star.circle.fill")
+                Image(systemName: "app")
                     .resizable()
                     .scaledToFit()
             }
         }
-        .frame(height: 32)
+        .frame(height: 18)
         .accessibilityLabel("MotStar")
     }
 }
