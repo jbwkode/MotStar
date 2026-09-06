@@ -65,9 +65,9 @@ private struct BrandHeader: View {
             Group {
                 if let image = Self.brandMark {
                     Image(nsImage: image)
+                        .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .renderingMode(.template)
                         .foregroundStyle(.primary)
                 } else if let image = MotStarAssets.loadLogo() {
                     Image(nsImage: image)
