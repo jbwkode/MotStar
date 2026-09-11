@@ -5,7 +5,7 @@
 # API credentials.
 #
 # Usage:
-#   bash scripts/notarize.sh build/MotStar-0.3.7.dmg
+#   bash scripts/notarize.sh build/MotStar-0.3.8.dmg
 #
 # Credentials (or env):
 #   -k/--key <path>       API key .p8 file   (env: ASC_API_KEY)
@@ -13,7 +13,7 @@
 #   -s/--issuer <uuid>    API issuer ID      (env: ASC_ISSUER)
 #
 # Example (defaults used in this project's release flow):
-#   bash scripts/notarize.sh build/MotStar-0.3.7.dmg
+#   bash scripts/notarize.sh build/MotStar-0.3.8.dmg
 #       --key ~/Downloads/AuthKey_Z37Z8S245M.p8 \
 #       --key-id Z37Z8S245M \
 #       --issuer 6c15956a-62a1-47f5-b602-8993447a1215
