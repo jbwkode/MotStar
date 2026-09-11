@@ -21,11 +21,14 @@ what a single-window native app does well.
 ### 2.1 Core editing behaviours (Obsidian-like)
 - Create new `.md` / `.txt` files anywhere on disk
 - Edit existing `.md` / `.txt`
-- Source editing with native text view: undo/redo, ⌘S save, dirty-dot and
-  save/discard prompts on file switch, standard text editing behaviours
-- Live **Preview / Edit** toggle per file; preview reflects unsaved draft
-- Keyboard-first: ⌘N new file, ⌘S save, ⌘E toggle edit/preview, ⌘P print,
-  ⇧⌘E export PDF, markdown ⇧⌘R formatted/raw
+- Source editing with native text view: undo/redo, ⌘S save, ⌥⌘R revert to
+  saved (discard unsaved edits), dirty-dot and save/discard prompts on file
+  switch, standard text editing behaviours
+- Live **Preview / Edit** toggle per file; preview reflects the unsaved
+  draft, and leaving the editor with unsaved changes prompts
+  Save / Discard / Cancel
+- Keyboard-first: ⌘N new file, ⌘S save, ⌥⌘R revert, ⌘E toggle edit/preview,
+  ⌘P print, ⇧⌘E export PDF, markdown ⇧⌘R formatted/raw
 - Inline image display (local, data-URI embedding — done in v0.3)
 
 ### 2.2 Markdown syntax surface to render (matrix)

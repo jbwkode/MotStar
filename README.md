@@ -29,7 +29,8 @@ Markdown, text, source code, PDF, Office documents, images — and edit
   Obsidian-style **callouts**, **wikilinks** (`[[note]]`) and **embeds**
   (`![[image.png]]`) — all rendered **offline**, no network required
 - **Built-in editor** — create, edit and save `.md`/`.txt`; Edit/Preview
-  toggle, dirty-state tracking, markdown format tools, focus mode
+  toggle, dirty-state tracking, **discard/revert unsaved edits** (⌥⌘R),
+  markdown format tools, focus mode
 - **Syntax-highlighted code viewer** — source files open as readable,
   colour-coded documents (Swift, Python, JS/TS, C/C++, Go, Rust, shell, …)
   with the language auto-detected
@@ -120,6 +121,7 @@ swift test
 |---|---|
 | ⌘O / ⌘N / ⇧⌘N | Add folder / New Markdown file / New text file |
 | ⌘S / ⌘E | Save / Toggle Edit-Preview |
+| ⌥⌘R | Revert to Saved (discard unsaved edits) |
 | ⌘P / ⇧⌘E | Print / Export as PDF |
 | ⇧⌘M / ⇧⌘S | Email / Share |
 | ⌘F | Find files in sidebar |

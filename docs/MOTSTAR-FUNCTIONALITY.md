@@ -101,7 +101,8 @@ types show with generic icon and Quick Look preview (never hidden).
   / Add Folder buttons.
 - Toolbar (always when a file selected): **Share · Email · Print · Export
   PDF** (icons); for editable files the mode picker and, while editing, a
-  **Save** button; for Markdown in Preview, a **Formatted | Raw** toggle.
+  **Save** button plus a **Revert** button (discard changes, ⌥⌘R); for
+  Markdown in Preview, a **Formatted | Raw** toggle.
 
 ### Previews by type
 - **Markdown (.md):** formatted HTML in offline WKWebView (default), or raw
@@ -158,7 +159,14 @@ Markdown pages; links open in the default browser via navigation policy).
   editing).
 - **Save:** ⌘S or toolbar; **dirty tracking** against the loaded snapshot;
   switching files prompts **Save / Discard / Cancel**.
-- **Edit/Preview toggle** (⌘E) — preview reflects the unsaved draft.
+- **Discard / Revert:** ⌥⌘R or the toolbar **Revert** button abandons unsaved
+  edits by re-reading the file from disk (confirmation only when dirty; the
+  editor's undo history is cleared so ⌘Z can't bring the draft back). While
+  the preview is showing an unsaved draft, a banner offers **Save** /
+  **Discard…** directly. If the file can't be re-read the draft is kept.
+- **Edit/Preview toggle** (⌘E) — preview reflects the unsaved draft;
+  leaving the editor with unsaved changes prompts **Save / Discard / Cancel**
+  (Discard reverts to the on-disk text).
 - **Markdown format tools:** format bar above editor (H1 H2 H3, Bold,
   Italic, Code, Quote, List, Numbered, Link, Image) and **Format menu**
   (⌥⌘1/2/3 headings, ⌘B, ⌘I, ⇧⌘K link). Wraps the selection or inserts
@@ -202,6 +210,7 @@ Markdown pages; links open in the default browser via navigation policy).
 | ⌘O | Add Folder… |
 | ⌘N / ⇧⌘N | New Markdown File / New Text File |
 | ⌘S | Save document |
+| ⌥⌘R | Revert to Saved (discard unsaved edits) |
 | ⌘E | Toggle Edit / Preview |
 | ⌘P / ⇧⌘E | Print / Export as PDF |
 | ⇧⌘M / ⇧⌘S | Email (Outlook) / Share |

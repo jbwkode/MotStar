@@ -294,10 +294,11 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func confirmUnsavedChanges() -> NSApplication.ModalResponse {
+    private func confirmUnsavedChanges(before action: String = "switching") -> NSApplication.ModalResponse {
         let alert = NSAlert()
         alert.messageText = "Unsaved changes"
-        alert.informativeText = "The document has unsaved changes. Save them before switching?"
+        alert.informativeText = "The document has unsaved changes. Save them before \(action)?"
+        alert.alertStyle = .warning
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Discard")
         alert.addButton(withTitle: "Cancel")
@@ -318,7 +319,26 @@ final class AppState: ObservableObject {
         paneMode = .editor
     }
 
+    /// Returns to the preview. When the editor holds unsaved changes, asks
+    /// whether to **Save** them, **Discard** them (reload from disk) or
+    /// **Cancel** and stay in the editor.
     func showPreview() {
+        if let doc = activeDocument, doc.isDirty {
+            switch confirmUnsavedChanges(before: "leaving the editor") {
+            case .alertFirstButtonReturn: // Save
+                do { try doc.save() } catch {
+                    activeAlert = AlertItem(title: "Save", message: error.localizedDescription)
+                    return
+                }
+            case .alertSecondButtonReturn: // Discard
+                doc.revert()
+            default: // Cancel — stay in the editor
+                // Nudge SwiftUI so the segmented mode picker snaps back to
+                // "Edit" even though `paneMode` never changed.
+                objectWillChange.send()
+                return
+            }
+        }
         paneMode = .preview
     }
 
@@ -337,6 +357,24 @@ final class AppState: ObservableObject {
         } catch {
             activeAlert = AlertItem(title: "Save", message: error.localizedDescription)
         }
+    }
+
+    /// Abandons unsaved editor changes by re-reading the file from disk.
+    /// Asks for confirmation first (the discarded draft is not recoverable),
+    /// then leaves the document open in its current pane. If the file cannot
+    /// be re-read, the draft is kept so no work is silently lost.
+    func revertActiveDocument(confirm: Bool = true) {
+        guard let doc = activeDocument, doc.isDirty else { return }
+        if confirm {
+            let alert = NSAlert()
+            alert.messageText = "Discard unsaved changes?"
+            alert.informativeText = "“\(doc.url.lastPathComponent)” will be reloaded from disk. Your unsaved changes cannot be recovered."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Discard Changes")
+            alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+        doc.revert()
     }
 
     // MARK: New files

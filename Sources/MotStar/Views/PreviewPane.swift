@@ -3,7 +3,8 @@ import AppKit
 
 /// Right pane: toolbar (Share / Email / Print / Export / mode) above the
 /// preview or source editor. Markdown and text files get an Edit/Preview
-/// toggle plus a Save button while editing. `.md` previews can be formatted
+/// toggle plus a Save button while editing; leaving the editor with unsaved
+/// changes prompts Save / Discard / Cancel. `.md` previews can be formatted
 /// or raw (⇧⌘R). Everything routes through the shared `AppState`.
 struct PreviewPane: View {
     @EnvironmentObject private var app: AppState
@@ -13,6 +14,9 @@ struct PreviewPane: View {
             toolbar
             if app.paneMode == .editor && app.selectedKind == .markdown {
                 markdownFormatBar
+            }
+            if showsDraftBanner {
+                unsavedDraftBanner
             }
             Divider()
             content
@@ -78,6 +82,15 @@ struct PreviewPane: View {
                                 .labelStyle(.titleAndIcon)
                         }
                         .help("Save the document (⌘S)")
+                        .disabled(!(app.activeDocument?.isDirty ?? false))
+
+                        Button {
+                            app.revertActiveDocument()
+                        } label: {
+                            Label("Revert", systemImage: "arrow.uturn.backward")
+                                .labelStyle(.iconOnly)
+                        }
+                        .help("Discard changes and reload from disk (⌥⌘R)")
                         .disabled(!(app.activeDocument?.isDirty ?? false))
                     }
                 }
@@ -159,6 +172,35 @@ struct PreviewPane: View {
     }
 
     // MARK: Preview content
+
+    /// True while the preview is showing an unsaved editor draft, so the
+    /// banner offering Save / Discard is visible.
+    private var showsDraftBanner: Bool {
+        app.paneMode == .preview
+            && (app.activeDocument?.isDirty ?? false)
+            && app.activeDocument?.url == app.selectedURL
+    }
+
+    /// Shown above the preview when the pane is displaying unsaved edits, so
+    /// the user can keep or abandon them without hunting through the menus.
+    private var unsavedDraftBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "pencil.circle.fill")
+                .foregroundStyle(.orange)
+            Text("Showing unsaved edits")
+                .font(.callout)
+            Spacer()
+            Button("Save") {
+                app.saveActiveDocument()
+            }
+            Button("Discard…") {
+                app.revertActiveDocument()
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.orange.opacity(0.12))
+    }
 
     @ViewBuilder private var content: some View {
         if let url = app.selectedURL {

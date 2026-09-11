@@ -163,14 +163,24 @@ struct SourceEditorView: NSViewRepresentable {
 
         applyWrap(textView, wrap: wrap)
         textView.string = document.text
+        context.coordinator.lastRevision = document.revision
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        // Avoid clobbering the caret while the user types: only sync when the
-        // view text differs from the document (e.g. after load/save).
-        if textView.string != document.text {
+        if context.coordinator.lastRevision != document.revision {
+            // The document was replaced from disk (initial load or a revert):
+            // swap in the on-disk text and drop the previous undo history so
+            // the discarded edits cannot be brought back with ⌘Z.
+            context.coordinator.lastRevision = document.revision
+            textView.string = document.text
+            textView.undoManager?.removeAllActions()
+            textView.setSelectedRange(NSRange(location: 0, length: 0))
+        } else if textView.string != document.text {
+            // Avoid clobbering the caret while the user types: only sync when
+            // the view text differs from the document (e.g. after a format
+            // command or save).
             textView.string = document.text
         }
         // Apply font-size changes (zoom) without touching the text.
@@ -193,6 +203,9 @@ struct SourceEditorView: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         private let document: TextDocument
+        /// Last `TextDocument.revision` synced into the text view, so a revert
+        /// (or load) can be told apart from an ordinary user edit.
+        var lastRevision = -1
 
         init(document: TextDocument) {
             self.document = document

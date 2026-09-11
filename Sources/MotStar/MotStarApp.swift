@@ -65,6 +65,12 @@ struct MotStarCommands: Commands {
             .keyboardShortcut("s", modifiers: .command)
             .disabled(!(app.activeDocument?.isDirty ?? false))
 
+            Button("Revert to Saved") {
+                app.revertActiveDocument()
+            }
+            .keyboardShortcut("r", modifiers: [.command, .option])
+            .disabled(!(app.activeDocument?.isDirty ?? false))
+
             Button("Toggle Edit / Preview") {
                 app.toggleEditPreview()
             }
