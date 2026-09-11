@@ -69,12 +69,12 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 PLIST
 
 echo "==> Signing"
-SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
 if [ -n "$SIGN_ID" ]; then
     codesign --force --deep --sign "$SIGN_ID" --options runtime --timestamp "$APP"
     echo "==> Signed with: $SIGN_ID"
 else
-    SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+    SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
     if [ -n "$SIGN_ID" ]; then
         codesign --force --deep --sign "$SIGN_ID" --options runtime --timestamp "$APP"
         echo "==> Signed with: $SIGN_ID (Apple Development — not distributable)"
