@@ -101,13 +101,33 @@ Requires Xcode (macOS 14+ SDK).
 # Run directly from the terminal
 swift run MotStar
 
-# Or build a proper .app bundle (signs with your Apple Development identity
-# if one is installed, otherwise ad-hoc)
+# Or build a proper .app bundle (prefers a Developer ID identity when
+# installed, otherwise Apple Development / ad-hoc for local use)
 ./scripts/bundle-app.sh
 open build/MotStar.app
 ```
 
 Or open `Package.swift` in Xcode, select the **MotStar** scheme, and Run.
+
+### Releasing
+
+```sh
+./scripts/release.sh              # build → DMG + ZIP → notarize → staple → verify
+./scripts/release.sh --publish    # …and create/update the GitHub release
+./scripts/release.sh --skip-notarize   # local artifacts only (no Apple round-trip)
+```
+
+`release.sh` requires a **Developer ID Application** certificate in the keychain
+and notarytool credentials stored once, e.g.:
+
+```sh
+xcrun notarytool store-credentials motstar \
+  --key AuthKey_XXXX.p8 --key-id XXXXXXXXXX --issuer <issuer-uuid>
+```
+
+It refuses to build a release without Developer ID signing, refuses to publish
+if notarization fails, and verifies Gatekeeper acceptance of the app inside both
+the DMG and the ZIP before finishing.
 
 ### Tests
 

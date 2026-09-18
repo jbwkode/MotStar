@@ -259,18 +259,18 @@ when context doesn't apply.
 ```sh
 swift build            # debug
 swift test             # 40 unit tests (registry, markdown, footnotes, wiki, images, PDF export, outlines, editor revert)
-./scripts/bundle-app.sh   # release build → build/MotStar.app (signed)
-# DMG:
-mkdir -p build/dmg-staging && cp -R build/MotStar.app build/dmg-staging/
-ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO build/MotStar-0.3.8.dmg
-# App zip:
-ditto -c -k --sequesterRsrc --keepParent build/MotStar.app build/MotStar-v0.3.8-macOS.zip
-# Release upload:
-gh release create v0.3.8 "MotStar 0.3.8" --notes "…"
-gh release upload v0.3.8 build/MotStar-0.3.8.dmg build/MotStar-v0.3.8-macOS.zip scripts/allow-dmg.sh scripts/install.sh --clobber
+./scripts/bundle-app.sh          # release build → build/MotStar.app (Developer ID signed)
+./scripts/release.sh             # + DMG/ZIP → notarize → staple → verify
+./scripts/release.sh --publish   # …and create/update the GitHub release
+./scripts/release.sh --skip-notarize   # local artifacts only
+./scripts/notarize.sh <dmg|zip>  # notarize an existing artifact standalone
 ```
 
+- `scripts/release.sh` is the release pipeline: it fails early without a
+  Developer ID identity, notarizes via the `motstar` keychain profile
+  (`notarytool store-credentials`), staples the app + container, rebuilds both
+  artifacts from the stapled app, and verifies Gatekeeper acceptance
+  (`spctl`) of the app inside the DMG and ZIP before optionally publishing.
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
 - Each versioned release hosts `MotStar-<ver>.dmg`, `MotStar-v<ver>-macOS.zip`,
