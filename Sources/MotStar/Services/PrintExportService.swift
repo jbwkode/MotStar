@@ -300,13 +300,15 @@ enum PrintExportService {
         }
         context.beginPDFPage(nil)
 
-        // White page background, then the (trimmed) page image fit inside
-        // with modest margins — avoids the narrow "postage stamp" result.
+        // White page background, then the page image fitted to the sheet.
+        // Quick Look page images are already page-proportioned (A4/Letter),
+        // so adding our own margins would shrink the content and leave the
+        // text looking off-centre. Fit to the full media box instead.
         context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
         context.fill(mediaBox)
 
-        let scale = min((pageSize.width - 48) / CGFloat(image.width),
-                        (pageSize.height - 48) / CGFloat(image.height))
+        let scale = min(pageSize.width / CGFloat(image.width),
+                        pageSize.height / CGFloat(image.height))
         let drawSize = CGSize(width: CGFloat(image.width) * scale,
                               height: CGFloat(image.height) * scale)
         let origin = CGPoint(x: (pageSize.width - drawSize.width) / 2,
