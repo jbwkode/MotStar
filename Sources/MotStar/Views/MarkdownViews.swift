@@ -151,6 +151,7 @@ struct SourceEditorView: NSViewRepresentable {
         textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.textColor = .labelColor
         textView.backgroundColor = .textBackgroundColor
+        textView.insertionPointColor = .controlAccentColor
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -158,17 +159,22 @@ struct SourceEditorView: NSViewRepresentable {
         textView.smartInsertDeleteEnabled = false
         textView.textContainerInset = NSSize(width: 8, height: 8)
 
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+
         // Let the shared AppState reach this view for format commands.
         AppState.shared.activeEditorTextView = textView
 
-        applyWrap(textView, wrap: wrap)
         textView.string = document.text
         context.coordinator.lastRevision = document.revision
+        context.coordinator.lastWrap = wrap
+        applyWrap(textView, wrap: wrap)
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+
         if context.coordinator.lastRevision != document.revision {
             // The document was replaced from disk (initial load or a revert):
             // swap in the on-disk text and drop the previous undo history so
@@ -177,17 +183,32 @@ struct SourceEditorView: NSViewRepresentable {
             textView.string = document.text
             textView.undoManager?.removeAllActions()
             textView.setSelectedRange(NSRange(location: 0, length: 0))
-        } else if textView.string != document.text {
-            // Avoid clobbering the caret while the user types: only sync when
-            // the view text differs from the document (e.g. after a format
-            // command or save).
+            textView.scrollToBeginningOfDocument(nil)
+        } else if textView.string != document.text, !textView.hasMarkedText() {
+            // External sync (format command, save, etc.). Preserve the caret
+            // and scroll position so typing never jumps around on large docs.
+            let selection = textView.selectedRange()
+            let origin = scrollView.contentView.bounds.origin
             textView.string = document.text
+            let length = (textView.string as NSString).length
+            let location = min(selection.location, length)
+            let selLength = min(selection.length, max(0, length - location))
+            textView.setSelectedRange(NSRange(location: location, length: selLength))
+            scrollView.contentView.scroll(to: origin)
+            scrollView.reflectScrolledClipView(scrollView.contentView)
         }
+
         // Apply font-size changes (zoom) without touching the text.
         if (textView.font?.pointSize).map(Double.init) != fontSize {
             textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         }
-        applyWrap(textView, wrap: wrap)
+
+        // Re-run wrap layout ONLY when the setting changed — doing it every
+        // keystroke invalidated layout and caused scroll/caret jumping.
+        if context.coordinator.lastWrap != wrap {
+            context.coordinator.lastWrap = wrap
+            applyWrap(textView, wrap: wrap)
+        }
     }
 
     private func applyWrap(_ textView: NSTextView, wrap: Bool) {
@@ -198,7 +219,6 @@ struct SourceEditorView: NSViewRepresentable {
         textView.textContainer?.containerSize = NSSize(
             width: wrap ? textView.frame.width : .greatestFiniteMagnitude,
             height: .greatestFiniteMagnitude)
-        textView.needsLayout = true
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -206,6 +226,7 @@ struct SourceEditorView: NSViewRepresentable {
         /// Last `TextDocument.revision` synced into the text view, so a revert
         /// (or load) can be told apart from an ordinary user edit.
         var lastRevision = -1
+        var lastWrap: Bool?
 
         init(document: TextDocument) {
             self.document = document
