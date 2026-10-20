@@ -74,11 +74,71 @@ enum PrintExportService {
             return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 10))
         case .pdf:
             return try Data(contentsOf: url)
+        case .docx:
+            // Prefer a full-document conversion (all pages, real text) over
+            // the single-page Quick Look snapshot.
+            if let data = try? await docxPDF(url: url) {
+                return data
+            }
+            return try await Self.quickLookPDF(url: url)
+        case .pptx, .xlsx:
+            return try await Self.quickLookPDF(url: url)
         case .image:
             return try Self.imagePDF(url: url)
-        case .docx, .pptx, .xlsx, .other:
+        case .other:
             return try await Self.quickLookPDF(url: url)
         }
+    }
+
+    /// Converts a Word document to HTML with `textutil` (full document, all
+    /// pages), inlines local images, and renders it through the paginated
+    /// WebKit PDF pipeline. Returns nil when conversion isn't possible.
+    @MainActor
+    private static func docxPDF(url: URL) async throws -> Data? {
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("motstar-docx-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let htmlURL = tmp.appendingPathComponent("document.html")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+        process.arguments = ["-convert", "html", "-output", htmlURL.path, url.path]
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0,
+              let raw = try? String(contentsOf: htmlURL, encoding: .utf8),
+              !raw.isEmpty else { return nil }
+
+        // Embed images that textutil wrote beside the HTML.
+        let withImages = MarkdownHTML.rewritingRelativeImages(raw, baseDirectory: tmp)
+
+        let printCSS = """
+        <style>
+        body { font-family: -apple-system, 'Helvetica Neue', 'Times New Roman', serif;
+               font-size: 12pt; line-height: 1.45; color: #000; margin: 0; }
+        p { margin: 0 0 0.6em; }
+        h1, h2, h3, h4 { margin: 1em 0 0.5em; }
+        table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+        td, th { border: 1px solid #bbb; padding: 4px 7px; vertical-align: top; font-size: 11pt; }
+        img { max-width: 100%; height: auto; }
+        @page { size: A4; margin: 18mm; }
+        </style>
+        """
+        let html: String
+        if let headRange = withImages.range(of: "</head>", options: .caseInsensitive) {
+            html = withImages.replacingCharacters(in: headRange, with: printCSS + "</head>")
+        } else {
+            html = printCSS + withImages
+        }
+
+        return try await renderPaginatedPDF(html: html)
     }
 
     /// Prints the selected file through the standard macOS print dialog.
