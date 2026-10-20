@@ -506,12 +506,14 @@ enum MarkdownHTML {
     }
 
     @media print {
-        body { padding: 0; color: #000000; background: #ffffff; }
+        /* WebKit's PDF generator ignores @page margins, so print padding is
+           applied on the body to guarantee real page margins. */
+        body { padding: 14mm; color: #000000; background: #ffffff; }
         a { color: #000000; text-decoration: underline; }
         pre, blockquote, th, td, code { background: transparent; }
         img { max-width: 100%; }
     }
-    @page { size: A4; margin: 12mm; }
+    @page { size: A4; margin: 0; }
     """
     }
 

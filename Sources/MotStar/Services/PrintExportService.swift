@@ -138,13 +138,14 @@ enum PrintExportService {
         let printCSS = """
         <style>
         body { font-family: -apple-system, 'Helvetica Neue', 'Times New Roman', serif;
-               font-size: 12pt; line-height: 1.45; color: #000; margin: 0; }
+               font-size: 12pt; line-height: 1.45; color: #000;
+               margin: 0; padding: 18mm; }
         p { margin: 0 0 0.6em; }
         h1, h2, h3, h4 { margin: 1em 0 0.5em; }
         table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
         td, th { border: 1px solid #bbb; padding: 4px 7px; vertical-align: top; font-size: 11pt; }
         img { max-width: 100%; height: auto; }
-        @page { size: A4; margin: 18mm; }
+        @page { size: A4; margin: 0; }
         </style>
         """
         if let headRange = withImages.range(of: "</head>", options: .caseInsensitive) {
@@ -462,8 +463,8 @@ enum TextHTML {
         let css = """
         body { margin: 0; padding: 24px 30px; font-family: ui-monospace, Menlo, monospace; font-size: 10pt; line-height: 1.5; color: #111; background: #fff; }
         pre { white-space: pre-wrap; word-wrap: break-word; }
-        @media print { body { padding: 0; } }
-        @page { size: A4; margin: 12mm; }
+        @media print { body { padding: 18mm; } }
+        @page { size: A4; margin: 0; }
         """
         return """
         <!DOCTYPE html><html><head><meta charset="utf-8"><style>\(css)</style></head>
