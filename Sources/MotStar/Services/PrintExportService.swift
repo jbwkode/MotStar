@@ -319,13 +319,13 @@ enum PrintExportService {
         return output as Data
     }
 
-    /// Best Quick Look page image for a document, with the padded canvas
-    /// whitespace trimmed off (Office docs render on a padded square canvas,
-    /// which otherwise makes the page look narrow).
+    /// Best Quick Look page image for a document. Quick Look already returns
+    /// a page-proportioned image (e.g. 1448×2048 for A4). We must NOT trim the
+    /// white page margins — the page background is white on white, so ink-
+    /// based trimming narrows the page.
     @MainActor
     static func documentPageImage(for url: URL) async throws -> CGImage {
-        let raw = try await bestQuickLookImage(for: url)
-        return ImageTrimming.trimmedWhitespace(raw)
+        try await bestQuickLookImage(for: url)
     }
 
     /// Returns the best CGImage Quick Look can produce for a file: full-size
