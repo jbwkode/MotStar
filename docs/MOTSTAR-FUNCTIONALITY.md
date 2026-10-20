@@ -1,6 +1,6 @@
 # MotStar — Complete Functional Specification (for build comparison)
 
-**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.9)
+**Version:** 1.1 — generated 2026-09-06 from the shipped app (v0.3.10)
 **Purpose:** give another AI/team everything needed to build a feature-parity
 macOS app.
 **Repo:** `https://github.com/jbwkode/MotStar` — source of truth.

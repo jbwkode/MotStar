@@ -48,7 +48,7 @@ Markdown, text, source code, PDF, Office documents, images — and edit
 
 ## Install (from the Release)
 
-1. Go to the **Releases** page and download **`MotStar-0.3.9.dmg`**
+1. Go to the **Releases** page and download **`MotStar-0.3.10.dmg`**
    (a `.zip` of the app is also available).
 2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
    inside the window (or drag it into your Applications folder manually).
@@ -69,7 +69,7 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 
 The script fetches the latest DMG, installs to /Applications (backing up any
 existing copy), clears the quarantine flag and launches MotStar.
-Pin a specific release with `VERSION=v0.3.9`. Anonymous downloads work with no
+Pin a specific release with `VERSION=v0.3.10`. Anonymous downloads work with no
 setup — no token, no account.
 
 ### Manual install from a DMG (helper)
@@ -80,7 +80,7 @@ so you can drag **MotStar.app** into /Applications without Gatekeeper
 interference:
 
 ```bash
-bash allow-dmg.sh ~/Downloads/MotStar-0.3.9.dmg   # or no args = newest in ~/Downloads
+bash allow-dmg.sh ~/Downloads/MotStar-0.3.10.dmg   # or no args = newest in ~/Downloads
 ```
 
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.

@@ -139,7 +139,7 @@ enum PrintExportService {
         <style>
         body { font-family: -apple-system, 'Helvetica Neue', 'Times New Roman', serif;
                font-size: 12pt; line-height: 1.45; color: #000;
-               margin: 0; padding: 18mm; }
+               margin: 0; padding: 0; }
         p { margin: 0 0 0.6em; }
         h1, h2, h3, h4 { margin: 1em 0 0.5em; }
         table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
@@ -252,7 +252,11 @@ enum PrintExportService {
         preferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = preferences
 
-        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 595, height: 842),
+        let pageSize = CGSize(width: 595, height: 842)   // A4 @ 72 dpi
+        let pageMargin: CGFloat = 51                     // ~18 mm
+        let layoutWidth = pageSize.width - pageMargin * 2
+        _ = pageMargin
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: layoutWidth, height: 842),
                                 configuration: configuration)
         let waiter = WebLoadWaiter(webView: webView)
         webView.loadHTMLString(html, baseURL: nil)
@@ -269,7 +273,7 @@ enum PrintExportService {
         }
 
         let pdfConfiguration = WKPDFConfiguration()
-        return try await withCheckedThrowingContinuation { continuation in
+        let raw = try await withCheckedThrowingContinuation { continuation in
             webView.createPDF(configuration: pdfConfiguration) { result in
                 switch result {
                 case .success(let data): continuation.resume(returning: data)
@@ -277,6 +281,9 @@ enum PrintExportService {
                 }
             }
         }
+        // WebKit returns one tall page; slice it into real A4 pages with
+        // margins (text stays selectable — content is drawn, not rasterised).
+        return PDFSlicer.paginate(raw, pageSize: pageSize, margin: pageMargin) ?? raw
     }
 
     /// Observes load completion for the off-screen web view.
@@ -463,7 +470,7 @@ enum TextHTML {
         let css = """
         body { margin: 0; padding: 24px 30px; font-family: ui-monospace, Menlo, monospace; font-size: 10pt; line-height: 1.5; color: #111; background: #fff; }
         pre { white-space: pre-wrap; word-wrap: break-word; }
-        @media print { body { padding: 18mm; } }
+        @media print { body { padding: 0; } }
         @page { size: A4; margin: 0; }
         """
         return """
