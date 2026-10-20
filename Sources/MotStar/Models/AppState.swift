@@ -111,7 +111,6 @@ final class AppState: ObservableObject {
     private static let fontRange: ClosedRange<Double> = 9...30
 
     init() {
-        let stored = UserDefaults.standard
         readingFontSize = Self.loadFontSize(key: Self.readingFontKey, fallback: Self.defaultReadingFontSize)
         editorFontSize = Self.loadFontSize(key: Self.editorFontKey, fallback: Self.defaultEditorFontSize)
         roots = persistence.load().sorted { $0.addedAt < $1.addedAt }

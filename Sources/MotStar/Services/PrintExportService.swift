@@ -71,14 +71,22 @@ enum PrintExportService {
             guard let text = draftText ?? Self.loadText(url) else {
                 throw PrintExportError.cannotReadFile
             }
-            return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 10))
+            return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 10),
+                                                settleNanoseconds: 150_000_000)
         case .pdf:
             return try Data(contentsOf: url)
         case .docx:
             // Prefer a full-document conversion (all pages, real text) over
             // the single-page Quick Look snapshot.
-            if let data = try? await docxPDF(url: url) {
-                return data
+            do {
+                if let data = try await docxPDF(url: url) {
+                    return data
+                }
+                NSLog("MotStar: DOCX conversion returned no data for %@ — falling back to Quick Look",
+                      url.lastPathComponent)
+            } catch {
+                NSLog("MotStar: DOCX conversion failed for %@ (%@) — falling back to Quick Look",
+                      url.lastPathComponent, error.localizedDescription)
             }
             return try await Self.quickLookPDF(url: url)
         case .pptx, .xlsx:
@@ -91,10 +99,9 @@ enum PrintExportService {
     }
 
     /// Converts a Word document to HTML with `textutil` (full document, all
-    /// pages), inlines local images, and renders it through the paginated
-    /// WebKit PDF pipeline. Returns nil when conversion isn't possible.
-    @MainActor
-    private static func docxPDF(url: URL) async throws -> Data? {
+    /// pages) and inlines local images. Runs `textutil` with a bounded wait so
+    /// a pathological document can't hang export forever.
+    static func docxHTML(url: URL) -> String? {
         let tmp = FileManager.default.temporaryDirectory
             .appendingPathComponent("motstar-docx-\(UUID().uuidString)")
         try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
@@ -108,8 +115,17 @@ enum PrintExportService {
         process.standardError = Pipe()
         do {
             try process.run()
-            process.waitUntilExit()
         } catch {
+            return nil
+        }
+
+        let deadline = Date().addingTimeInterval(30)
+        while process.isRunning, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        if process.isRunning {
+            process.terminate()
+            NSLog("MotStar: textutil timed out converting %@", url.lastPathComponent)
             return nil
         }
         guard process.terminationStatus == 0,
@@ -131,14 +147,17 @@ enum PrintExportService {
         @page { size: A4; margin: 18mm; }
         </style>
         """
-        let html: String
         if let headRange = withImages.range(of: "</head>", options: .caseInsensitive) {
-            html = withImages.replacingCharacters(in: headRange, with: printCSS + "</head>")
-        } else {
-            html = printCSS + withImages
+            return withImages.replacingCharacters(in: headRange, with: printCSS + "</head>")
         }
+        return printCSS + withImages
+    }
 
-        return try await renderPaginatedPDF(html: html)
+    /// Renders the converted DOCX HTML to a paginated PDF.
+    @MainActor
+    private static func docxPDF(url: URL) async throws -> Data? {
+        guard let html = docxHTML(url: url) else { return nil }
+        return try await renderPaginatedPDF(html: html, settleNanoseconds: 200_000_000)
     }
 
     /// Prints the selected file through the standard macOS print dialog.
@@ -178,7 +197,7 @@ enum PrintExportService {
             self.document = document
             super.init(frame: .zero)
 
-            var x: CGFloat = 0
+            let x: CGFloat = 0
             var y: CGFloat = 0
             var width: CGFloat = 0
             for index in 0..<document.pageCount {
@@ -225,7 +244,8 @@ enum PrintExportService {
     /// enabled so bundled Mermaid diagrams render; we settle briefly after
     /// page load for async diagram/image work before capturing.
     @MainActor
-    private static func renderPaginatedPDF(html: String) async throws -> Data {
+    private static func renderPaginatedPDF(html: String,
+                                           settleNanoseconds: UInt64 = 1_600_000_000) async throws -> Data {
         let configuration = WKWebViewConfiguration()
         let preferences = WKWebpagePreferences()
         preferences.allowsContentJavaScript = true
@@ -241,8 +261,11 @@ enum PrintExportService {
         } catch {
             throw PrintExportError.renderingFailed(error.localizedDescription)
         }
-        // Let Mermaid (and any image decode) finish before capturing.
-        try await Task.sleep(nanoseconds: 1_600_000_000)
+        // Let Mermaid (and any image decode) finish before capturing, when
+        // the content actually contains diagrams (Markdown path).
+        if settleNanoseconds > 0 {
+            try await Task.sleep(nanoseconds: settleNanoseconds)
+        }
 
         let pdfConfiguration = WKPDFConfiguration()
         return try await withCheckedThrowingContinuation { continuation in
