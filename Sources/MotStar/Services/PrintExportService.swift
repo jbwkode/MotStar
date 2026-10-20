@@ -287,7 +287,7 @@ enum PrintExportService {
     /// file icon; surfaces a friendly error if Quick Look has nothing.
     @MainActor
     private static func quickLookPDF(url: URL) async throws -> Data {
-        let image = try await bestQuickLookImage(for: url)
+        let image = try await documentPageImage(for: url)
 
         let pageSize = CGSize(width: 595, height: 842) // A4 @ 72 dpi
         let output = NSMutableData()
@@ -300,12 +300,13 @@ enum PrintExportService {
         }
         context.beginPDFPage(nil)
 
-        // White page background, then the image fit inside with margins.
+        // White page background, then the (trimmed) page image fit inside
+        // with modest margins — avoids the narrow "postage stamp" result.
         context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
         context.fill(mediaBox)
 
-        let scale = min((pageSize.width - 60) / CGFloat(image.width),
-                        (pageSize.height - 60) / CGFloat(image.height))
+        let scale = min((pageSize.width - 48) / CGFloat(image.width),
+                        (pageSize.height - 48) / CGFloat(image.height))
         let drawSize = CGSize(width: CGFloat(image.width) * scale,
                               height: CGFloat(image.height) * scale)
         let origin = CGPoint(x: (pageSize.width - drawSize.width) / 2,
@@ -316,6 +317,15 @@ enum PrintExportService {
         context.endPDFPage()
         context.closePDF()
         return output as Data
+    }
+
+    /// Best Quick Look page image for a document, with the padded canvas
+    /// whitespace trimmed off (Office docs render on a padded square canvas,
+    /// which otherwise makes the page look narrow).
+    @MainActor
+    static func documentPageImage(for url: URL) async throws -> CGImage {
+        let raw = try await bestQuickLookImage(for: url)
+        return ImageTrimming.trimmedWhitespace(raw)
     }
 
     /// Returns the best CGImage Quick Look can produce for a file: full-size

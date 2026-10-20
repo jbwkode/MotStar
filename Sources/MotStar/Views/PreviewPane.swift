@@ -234,6 +234,8 @@ struct PreviewPane: View {
                 }
             case .image:
                 ImagePreviewView(url: url)
+            case .docx, .pptx, .xlsx:
+                DocumentPagePreview(url: url)
             default:
                 QuickLookView(url: url)
                     .ignoresSafeArea(.container, edges: .bottom)
