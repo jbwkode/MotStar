@@ -49,15 +49,22 @@ ZIP="build/MotStar-v$VERSION-macOS.zip"
 
 # Fails the release when Gatekeeper does not accept an artifact. Without this,
 # spctl output was only printed and a rejected build could still be published.
+# Trust the exit status: spctl exits 0 on acceptance, and prints nothing at all
+# unless asked for detail (so grepping its text alone would misfire).
 expect_accepted() {
     local label="$1"; shift
-    local out
-    if out=$("$@" 2>&1) && grep -qi "accepted" <<<"$out"; then
-        echo "    $label: accepted ✓"
-    else
+    local out rc
+    set +e
+    out=$("$@" 2>&1); rc=$?
+    set -e
+    if [ "$rc" -ne 0 ] || grep -qi "rejected" <<<"$out"; then
         echo "error: Gatekeeper rejected $label — not publishing." >&2
         sed 's/^/    /' <<<"$out" >&2
         exit 1
+    fi
+    echo "    $label: accepted ✓"
+    if [ -n "$out" ]; then
+        { grep -v "^$" <<<"$out" || true; } | sed 's/^/      /'
     fi
 }
 
@@ -157,20 +164,23 @@ if [ "$SKIP_NOTARIZE" -eq 0 ]; then
 
     echo "==> Verifying signatures and Gatekeeper acceptance"
     codesign --verify --deep --strict --verbose=2 "$APP"
-    if ! codesign -dvv "$APP" 2>&1 | grep -q "flags=.*runtime"; then
+    # Read the flags into a variable: piping into `grep -q` lets grep exit on
+    # the first match, SIGPIPEs codesign, and `pipefail` then reports failure.
+    SIGN_DETAILS=$(codesign -dvv "$APP" 2>&1 || true)
+    if ! grep -q "flags=.*runtime" <<<"$SIGN_DETAILS"; then
         echo "error: app is not built with the hardened runtime — not publishing." >&2
         exit 1
     fi
     echo "    app signature + hardened runtime: valid ✓"
 
     expect_accepted "DMG container" \
-        spctl --assess --type open --context context:primary-signature "$DMG"
+        spctl --assess --type open --context context:primary-signature -vv "$DMG"
     xcrun stapler validate "$DMG" >/dev/null
     echo "    DMG container: stapled ✓"
 
     MNT=$(mktemp -d)
     hdiutil attach "$DMG" -nobrowse -readonly -quiet -mountpoint "$MNT"
-    expect_accepted "app inside DMG" spctl --assess --type execute "$MNT/MotStar.app"
+    expect_accepted "app inside DMG" spctl --assess --type execute -vv "$MNT/MotStar.app"
     xcrun stapler validate "$MNT/MotStar.app" >/dev/null
     echo "    app inside DMG: stapled ✓"
     hdiutil detach "$MNT" -quiet
@@ -178,7 +188,7 @@ if [ "$SKIP_NOTARIZE" -eq 0 ]; then
 
     UNZ=$(mktemp -d)
     ditto -x -k "$ZIP" "$UNZ"
-    expect_accepted "app inside ZIP" spctl --assess --type execute "$UNZ/MotStar.app"
+    expect_accepted "app inside ZIP" spctl --assess --type execute -vv "$UNZ/MotStar.app"
     xcrun stapler validate "$UNZ/MotStar.app" >/dev/null
     echo "    app inside ZIP: stapled ✓"
     rm -rf "$UNZ"
