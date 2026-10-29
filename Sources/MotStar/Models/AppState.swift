@@ -104,8 +104,21 @@ final class AppState: ObservableObject {
     /// Combine subscription keeping the outline in sync with editor typing.
     private var outlineCancellables: Set<AnyCancellable> = []
 
+    /// Folder path the user last navigated to (selected file's folder, an
+    /// expanded folder, or a newly added root). Persisted so new files land
+    /// there in later sessions too.
+    private var lastVisitedDirectoryPath: String? {
+        didSet {
+            guard let path = lastVisitedDirectoryPath else { return }
+            UserDefaults.standard.set(path, forKey: Self.lastDirectoryKey)
+        }
+    }
+
     static let readingFontKey = "motstar.readingFontSize"
     static let editorFontKey = "motstar.editorFontSize"
+    /// Folder the user last navigated to (sidebar selection or expansion), so
+    /// the new-file panel can open there.
+    static let lastDirectoryKey = "motstar.lastVisitedDirectory"
     static let defaultReadingFontSize: Double = 15
     static let defaultEditorFontSize: Double = 13
     private static let fontRange: ClosedRange<Double> = 9...30
@@ -113,6 +126,7 @@ final class AppState: ObservableObject {
     init() {
         readingFontSize = Self.loadFontSize(key: Self.readingFontKey, fallback: Self.defaultReadingFontSize)
         editorFontSize = Self.loadFontSize(key: Self.editorFontKey, fallback: Self.defaultEditorFontSize)
+        lastVisitedDirectoryPath = UserDefaults.standard.string(forKey: Self.lastDirectoryKey)
         roots = persistence.load().sorted { $0.addedAt < $1.addedAt }
         rebuildRootNodes()
         let initialPaths = roots.map(\.path)
@@ -188,13 +202,16 @@ final class AppState: ObservableObject {
 
     func addFolders(urls: [URL]) {
         var changed = false
+        var firstAdded: URL?
         for url in urls {
             let path = url.path
             guard !roots.contains(where: { $0.path == path }) else { continue }
             roots.append(RootFolder(path: path))
+            if firstAdded == nil { firstAdded = url }
             changed = true
         }
         guard changed else { return }
+        if let first = firstAdded { rememberDirectory(first) }
         persistAndRebuild()
     }
 
@@ -225,6 +242,7 @@ final class AppState: ObservableObject {
     func setExpanded(_ path: String, _ expanded: Bool) {
         if expanded {
             expandedPaths.insert(path)
+            rememberDirectory(URL(fileURLWithPath: path))
         } else {
             expandedPaths.remove(path)
         }
@@ -250,6 +268,7 @@ final class AppState: ObservableObject {
         activeDocument = nil
         selectedURL = url
         paneMode = .preview
+        rememberDirectory(url)
     }
 
     /// Expands the tree along the folder path to a file and selects it.
@@ -378,6 +397,37 @@ final class AppState: ObservableObject {
 
     // MARK: New files
 
+    /// Folder the new-file panel opens in: wherever the user last navigated
+    /// (a selected file's folder, an expanded folder, an added root), then the
+    /// current selection, the open document's folder, and finally the first
+    /// root folder. `nil` lets AppKit pick its own default.
+    var preferredNewFileDirectory: URL? {
+        if let path = lastVisitedDirectoryPath {
+            let remembered = URL(fileURLWithPath: path)
+            if isDirectory(remembered) { return remembered }
+        }
+        if let selected = selectedURL {
+            let folder = isDirectory(selected) ? selected : selected.deletingLastPathComponent()
+            if isDirectory(folder) { return folder }
+        }
+        if let doc = activeDocument {
+            let folder = doc.url.deletingLastPathComponent()
+            if isDirectory(folder) { return folder }
+        }
+        if let root = roots.first, root.isReachable {
+            return root.url
+        }
+        return nil
+    }
+
+    /// Records the folder a navigation event landed in, so the next new file
+    /// starts there. Files contribute their containing folder.
+    private func rememberDirectory(_ url: URL) {
+        let folder = isDirectory(url) ? url : url.deletingLastPathComponent()
+        guard isDirectory(folder) else { return }
+        lastVisitedDirectoryPath = folder.path
+    }
+
     func createNewMarkdownFile() { createNewFile(markdown: true) }
     func createNewTextFile() { createNewFile(markdown: false) }
 
@@ -392,6 +442,8 @@ final class AppState: ObservableObject {
         }
         panel.canCreateDirectories = true
         panel.message = markdown ? "Create a new Markdown file" : "Create a new text file"
+        // Start in the folder the user was last working in.
+        panel.directoryURL = preferredNewFileDirectory
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 

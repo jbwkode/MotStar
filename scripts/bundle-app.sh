@@ -35,7 +35,15 @@ if [ -d "Sources/MotStar/Resources" ]; then
     cp -R Sources/MotStar/Resources/. "$APP/Contents/Resources/"
 fi
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
+# Bundle version comes from AppInfo.swift (the single source of truth) so the
+# Info.plist can never drift from the app's own constants.
+VERSION=$(sed -n 's/.*static let version = "\([^"]*\)".*/\1/p' Sources/MotStar/Models/AppInfo.swift | head -1)
+BUILD=$(sed -n 's/.*static let build = "\([^"]*\)".*/\1/p' Sources/MotStar/Models/AppInfo.swift | head -1)
+[ -n "$VERSION" ] || { echo "error: could not read version from AppInfo.swift" >&2; exit 1; }
+[ -n "$BUILD" ] || BUILD=1
+echo "==> Version $VERSION (build $BUILD)"
+
+cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -53,9 +61,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.3.10</string>
+    <string>$VERSION</string>
     <key>CFBundleVersion</key>
-    <string>10</string>
+    <string>$BUILD</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
