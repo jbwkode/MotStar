@@ -19,8 +19,9 @@ works offline.
   bleed for opaque artwork), About-window logo (transparent PNG), clickable
   app-icon in the title-bar right edge that **minimizes** the window
 - **Icon:** custom generated artwork; About window shows the brand logo
-- **Signing:** Apple Development identity (Team `U6PYFJD9QA`) via bundle
-  script; falls back to ad-hoc. Not notarized yet.
+- **Signing:** Developer ID Application (Team `U6PYFJD9QA`) via the bundle
+  script, plus Apple notarization with the ticket stapled to both the app and
+  the DMG. Local bundles fall back to Apple Development / ad-hoc.
 
 ## 2. Overall architecture
 
@@ -258,7 +259,7 @@ when context doesn't apply.
 
 ```sh
 swift build            # debug
-swift test             # 40 unit tests (registry, markdown, footnotes, wiki, images, PDF export, outlines, editor revert)
+swift test             # 48 unit tests (registry, markdown, footnotes, wiki, images, PDF export, outlines, editor revert)
 ./scripts/bundle-app.sh          # release build → build/MotStar.app (Developer ID signed)
 ./scripts/release.sh             # + DMG/ZIP → notarize → staple → verify
 ./scripts/release.sh --publish   # …and create/update the GitHub release
@@ -267,10 +268,12 @@ swift test             # 40 unit tests (registry, markdown, footnotes, wiki, ima
 ```
 
 - `scripts/release.sh` is the release pipeline: it fails early without a
-  Developer ID identity, notarizes via the `motstar` keychain profile
-  (`notarytool store-credentials`), staples the app + container, rebuilds both
-  artifacts from the stapled app, and verifies Gatekeeper acceptance
-  (`spctl`) of the app inside the DMG and ZIP before optionally publishing.
+  Developer ID identity, then notarizes in two passes via the `motstar`
+  keychain profile (`notarytool store-credentials`) — the app bundle first
+  (then stapled), then the DMG built from it (then stapled). A DMG rebuilt
+  after stapling has a new hash and no ticket, so it cannot be stapled later.
+  It verifies the DMG container plus the app inside the DMG and ZIP
+  (`spctl` + `stapler validate`) before optionally publishing.
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
   (highlight.js, KaTeX + data-URI fonts, Mermaid).
 - Each versioned release hosts `MotStar-<ver>.dmg`, `MotStar-v<ver>-macOS.zip`,
@@ -287,13 +290,12 @@ swift test             # 40 unit tests (registry, markdown, footnotes, wiki, ima
 
 ## 12. Known limitations / roadmap
 
-- Not notarized (right-click → Open on first launch for others).
 - Email requires Automation permission (guided in-app).
 - Footnot e pre-pass is line-based (safe inside fences; not for pathological
   nesting); currency `$` can trip inline maths detection.
 - No full-text content search yet; no line numbers; no live split
   edit/preview; no wikilink backlinks panel.
-- Roadmap: notarized Developer ID distribution → content search → line
+- Roadmap: content search → line
   numbers/live split → App Store (sandbox + security-scoped bookmarks).
 
 ## 13. Deliverable checklist for a parity build

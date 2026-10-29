@@ -52,10 +52,10 @@ Markdown, text, source code, PDF, Office documents, images — and edit
    (a `.zip` of the app is also available).
 2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
    inside the window (or drag it into your Applications folder manually).
-3. **First launch:** the app is signed with an Apple Development identity but
-   is **not yet notarized**, so macOS may block it. If you see
-   *"MotStar can't be opened"*, right-click (or Ctrl-click) **MotStar.app** →
-   **Open** → **Open** again. You only need to do this once.
+3. **First launch:** the app is signed with a **Developer ID** certificate and
+   **notarized by Apple**, with the ticket stapled to both the app and the
+   DMG. It opens normally — no right-click workaround, no `xattr` step, even
+   offline.
 4. Launch MotStar, click **Add Folder…** and pick the folders you want to
    browse.
 
@@ -68,23 +68,24 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 ```
 
 The script fetches the latest DMG, installs to /Applications (backing up any
-existing copy), clears the quarantine flag and launches MotStar.
+existing copy) and launches MotStar.
 Pin a specific release with `VERSION=v0.3.11`. Anonymous downloads work with no
 setup — no token, no account.
 
 ### Manual install from a DMG (helper)
 
-Prefer dragging the app yourself? **`allow-dmg.sh`** clears the quarantine
-attributes on the DMG and the app inside it, then opens the volume in Finder
-so you can drag **MotStar.app** into /Applications without Gatekeeper
-interference:
+Not needed for notarized releases — Gatekeeper accepts the DMG and the app as
+they are. **`allow-dmg.sh`** remains for older (pre-0.3.11) builds, or if a
+download picked up a stale quarantine flag: it clears the quarantine
+attributes on the DMG and the app inside it, then opens the volume in Finder.
 
 ```bash
 bash allow-dmg.sh ~/Downloads/MotStar-0.3.11.dmg   # or no args = newest in ~/Downloads
 ```
 
 > Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
-> Notarized distribution is planned for a future release.
+> Releases are signed with a Developer ID certificate and notarized; the
+> ticket is stapled to the app and the DMG.
 
 ### Email via Outlook (optional)
 
@@ -191,7 +192,6 @@ page.
 
 ## Roadmap
 
-- Notarized Developer ID distribution
 - Full-text content search
 - Line numbers & live split edit/preview
 - App Store distribution (sandbox + security-scoped bookmarks)

@@ -1,14 +1,15 @@
 #!/bin/bash
 # MotStar DMG helper — prepares a downloaded DMG for MANUAL installation.
 #
-# When you download a DMG, macOS tags it (and everything inside) with the
-# "quarantine" attribute. Gatekeeper then blocks the app on first launch
-# because MotStar is not yet notarized. This script clears those attributes
-# and opens the DMG so you can drag MotStar.app into /Applications normally.
+# Not needed for notarized releases (0.3.11 and later): Gatekeeper accepts the
+# DMG and the app inside it, because the ticket is stapled to both. This helper
+# remains for older builds, or when a download picked up a stale quarantine
+# attribute. It clears those attributes and opens the DMG so you can drag
+# MotStar.app into /Applications normally.
 #
 # Usage:
 #   bash allow-dmg.sh                          # uses the newest MotStar DMG in ~/Downloads
-#   bash allow-dmg.sh /path/to/MotStar-0.3.10.dmg
+#   bash allow-dmg.sh /path/to/MotStar-0.3.11.dmg
 set -euo pipefail
 
 DMG="${1:-}"
@@ -17,7 +18,7 @@ if [ -z "$DMG" ]; then
 fi
 if [ -z "$DMG" ] || [ ! -f "$DMG" ]; then
     echo "error: no MotStar DMG found. Pass a path, e.g." >&2
-    echo "  bash allow-dmg.sh ~/Downloads/MotStar-0.3.10.dmg" >&2
+    echo "  bash allow-dmg.sh ~/Downloads/MotStar-0.3.11.dmg" >&2
     exit 1
 fi
 DMG="$(cd "$(dirname "$DMG")" && pwd)/$(basename "$DMG")"

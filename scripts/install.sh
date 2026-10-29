@@ -97,8 +97,8 @@ echo "==> Installing to $DEST"
 ditto "$SRC_APP" "$DEST"
 hdiutil detach "$TMP/mnt" -quiet >/dev/null 2>&1 || true
 
-# Signed with an Apple Development identity (not yet notarized), so clear the
-# quarantine flag — otherwise Gatekeeper blocks first launch on downloaded apps.
+# Releases are notarized and stapled, so Gatekeeper accepts them as-is. Keep
+# clearing the quarantine flag as a safety net for older builds.
 xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
 
 echo "==> Launching MotStar"
