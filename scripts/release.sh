@@ -77,41 +77,63 @@ if ! grep -q "Authority=Developer ID Application" <<<"$SIGN_INFO"; then
 fi
 
 # --- Artifacts --------------------------------------------------------------
-echo "==> Creating $DMG"
-rm -rf build/dmg-staging
-mkdir -p build/dmg-staging
-cp -R "$APP" build/dmg-staging/
-ln -s /Applications build/dmg-staging/Applications
-hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO "$DMG" >/dev/null
+# The DMG and ZIP are built after notarization (signed below) so both carry the
+# stapled app. When notarization is skipped, build them straight away.
+build_artifacts() {
+    echo "==> Creating $DMG"
+    rm -rf build/dmg-staging
+    mkdir -p build/dmg-staging
+    cp -R "$APP" build/dmg-staging/
+    ln -s /Applications build/dmg-staging/Applications
+    hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO "$DMG" >/dev/null
 
-echo "==> Creating $ZIP"
-rm -f "$ZIP"
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+    echo "==> Creating $ZIP"
+    rm -f "$ZIP"
+    ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+}
 
 # --- Notarize, staple, rebuild from the stapled app, verify -----------------
 if [ "$SKIP_NOTARIZE" -eq 0 ]; then
+    # Pass 1: the app bundle itself. Stapling the app before packaging means
+    # the ticket travels inside the DMG and the ZIP, so both work offline.
+    echo "==> Submitting app bundle for notarization"
+    APPZIP="build/MotStar-app-notarize.zip"
+    rm -f "$APPZIP"
+    ditto -c -k --sequesterRsrc --keepParent "$APP" "$APPZIP"
+    SUBMIT_LOG=$(xcrun notarytool submit "$APPZIP" --keychain-profile "$PROFILE" --wait 2>&1)
+    echo "$SUBMIT_LOG" | tail -3
+    rm -f "$APPZIP"
+    if ! grep -q "status: Accepted" <<<"$SUBMIT_LOG"; then
+        echo "error: app notarization did not succeed — not publishing." >&2
+        grep -m1 -E "id:" <<<"$SUBMIT_LOG" >&2 || true
+        exit 1
+    fi
+    echo "==> Stapling app"
+    xcrun stapler staple "$APP" >/dev/null
+
+    # Build both artifacts from the stapled app.
+    build_artifacts
+
+    # Pass 2: the DMG container. A DMG rebuilt after stapling has a new hash
+    # and no ticket ("Record not found"), so it must be notarized in its final
+    # form to be stapleable. ~1 minute extra, and the DMG then validates
+    # offline like the app inside it.
     echo "==> Submitting $(basename "$DMG") for notarization"
     SUBMIT_LOG=$(xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait 2>&1)
     echo "$SUBMIT_LOG" | tail -3
     if ! grep -q "status: Accepted" <<<"$SUBMIT_LOG"; then
-        echo "error: notarization did not succeed — not publishing." >&2
+        echo "error: DMG notarization did not succeed — not publishing." >&2
         grep -m1 -E "id:" <<<"$SUBMIT_LOG" >&2 || true
         exit 1
     fi
 
-    echo "==> Stapling"
+    echo "==> Stapling DMG"
     xcrun stapler staple "$DMG" >/dev/null
-    xcrun stapler staple "$APP" >/dev/null
-
-    # Rebuild both artifacts from the stapled app so the app inside carries its ticket.
-    rm -rf build/dmg-staging && mkdir -p build/dmg-staging
-    cp -R "$APP" build/dmg-staging/
-    ln -s /Applications build/dmg-staging/Applications
-    hdiutil create -volname MotStar -srcfolder build/dmg-staging -ov -format UDZO "$DMG" >/dev/null
-    rm -f "$ZIP"
-    ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 
     echo "==> Verifying Gatekeeper acceptance"
+    xcrun stapler validate "$DMG" >/dev/null
+    echo "    DMG container: stapled ✓"
+
     MNT=$(mktemp -d)
     hdiutil attach "$DMG" -nobrowse -readonly -quiet -mountpoint "$MNT"
     spctl --assess --type open --context context:primary-signature -v "$MNT/MotStar.app" 2>&1 | tail -1
@@ -127,6 +149,7 @@ if [ "$SKIP_NOTARIZE" -eq 0 ]; then
     echo "==> Notarized and stapled ✓"
 else
     echo "==> Skipping notarization (local build)"
+    build_artifacts
 fi
 
 # --- Publish -----------------------------------------------------------------
