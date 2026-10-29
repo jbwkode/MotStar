@@ -47,6 +47,20 @@ APP="build/MotStar.app"
 DMG="build/MotStar-$VERSION.dmg"
 ZIP="build/MotStar-v$VERSION-macOS.zip"
 
+# Fails the release when Gatekeeper does not accept an artifact. Without this,
+# spctl output was only printed and a rejected build could still be published.
+expect_accepted() {
+    local label="$1"; shift
+    local out
+    if out=$("$@" 2>&1) && grep -qi "accepted" <<<"$out"; then
+        echo "    $label: accepted ✓"
+    else
+        echo "error: Gatekeeper rejected $label — not publishing." >&2
+        sed 's/^/    /' <<<"$out" >&2
+        exit 1
+    fi
+}
+
 # --- Preconditions ----------------------------------------------------------
 SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
 if [ -z "$SIGN_ID" ]; then
@@ -114,6 +128,17 @@ if [ "$SKIP_NOTARIZE" -eq 0 ]; then
     # Build both artifacts from the stapled app.
     build_artifacts
 
+    # Sign the disk image itself, so the container passes the strictest
+    # assessment (spctl --context primary-signature). Without this the DMG is
+    # notarized + stapled but unsigned, and strict verification reports
+    # "no usable signature" even though Finder opens it.
+    echo "==> Signing $(basename "$DMG")"
+    codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
+    codesign --verify --verbose=2 "$DMG" >/dev/null || {
+        echo "error: DMG signature did not verify — not publishing." >&2
+        exit 1
+    }
+
     # Pass 2: the DMG container. A DMG rebuilt after stapling has a new hash
     # and no ticket ("Record not found"), so it must be notarized in its final
     # form to be stapleable. ~1 minute extra, and the DMG then validates
@@ -130,21 +155,32 @@ if [ "$SKIP_NOTARIZE" -eq 0 ]; then
     echo "==> Stapling DMG"
     xcrun stapler staple "$DMG" >/dev/null
 
-    echo "==> Verifying Gatekeeper acceptance"
+    echo "==> Verifying signatures and Gatekeeper acceptance"
+    codesign --verify --deep --strict --verbose=2 "$APP"
+    if ! codesign -dvv "$APP" 2>&1 | grep -q "flags=.*runtime"; then
+        echo "error: app is not built with the hardened runtime — not publishing." >&2
+        exit 1
+    fi
+    echo "    app signature + hardened runtime: valid ✓"
+
+    expect_accepted "DMG container" \
+        spctl --assess --type open --context context:primary-signature "$DMG"
     xcrun stapler validate "$DMG" >/dev/null
     echo "    DMG container: stapled ✓"
 
     MNT=$(mktemp -d)
     hdiutil attach "$DMG" -nobrowse -readonly -quiet -mountpoint "$MNT"
-    spctl --assess --type open --context context:primary-signature -v "$MNT/MotStar.app" 2>&1 | tail -1
+    expect_accepted "app inside DMG" spctl --assess --type execute "$MNT/MotStar.app"
     xcrun stapler validate "$MNT/MotStar.app" >/dev/null
+    echo "    app inside DMG: stapled ✓"
     hdiutil detach "$MNT" -quiet
     rm -rf "$MNT"
 
     UNZ=$(mktemp -d)
     ditto -x -k "$ZIP" "$UNZ"
-    spctl --assess --type open --context context:primary-signature -v "$UNZ/MotStar.app" 2>&1 | tail -1
+    expect_accepted "app inside ZIP" spctl --assess --type execute "$UNZ/MotStar.app"
     xcrun stapler validate "$UNZ/MotStar.app" >/dev/null
+    echo "    app inside ZIP: stapled ✓"
     rm -rf "$UNZ"
     echo "==> Notarized and stapled ✓"
 else
