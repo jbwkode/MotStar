@@ -72,21 +72,6 @@ existing copy) and launches MotStar.
 Pin a specific release with `VERSION=v0.3.12`. Anonymous downloads work with no
 setup — no token, no account.
 
-### Manual install from a DMG (helper)
-
-Not needed for notarized releases — Gatekeeper accepts the DMG and the app as
-they are. **`allow-dmg.sh`** remains for older (pre-0.3.11) builds, or if a
-download picked up a stale quarantine flag: it clears the quarantine
-attributes on the DMG and the app inside it, then opens the volume in Finder.
-
-```bash
-bash allow-dmg.sh ~/Downloads/MotStar-0.3.12.dmg   # or no args = newest in ~/Downloads
-```
-
-> Requires **macOS 14 (Sonoma) or later**. Apple Silicon or Intel.
-> Releases are signed with a Developer ID certificate and notarized; the
-> ticket is stapled to the app and the DMG.
-
 ### Email via Outlook (optional)
 
 The first time you use **Email**, macOS asks whether MotStar may control

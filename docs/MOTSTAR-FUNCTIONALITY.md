@@ -264,7 +264,6 @@ swift test             # 48 unit tests (registry, markdown, footnotes, wiki, ima
 ./scripts/release.sh             # + DMG/ZIP → notarize → staple → verify
 ./scripts/release.sh --publish   # …and create/update the GitHub release
 ./scripts/release.sh --skip-notarize   # local artifacts only
-./scripts/notarize.sh <dmg|zip>  # notarize an existing artifact standalone
 ```
 
 - `scripts/release.sh` is the release pipeline: it fails early without a
@@ -275,10 +274,17 @@ swift test             # 48 unit tests (registry, markdown, footnotes, wiki, ima
   It verifies the DMG container plus the app inside the DMG and ZIP
   (`spctl` + `stapler validate`) before optionally publishing.
 - `scripts/fetch-phase2-assets.sh` downloads/embeds the web runtimes
-  (highlight.js, KaTeX + data-URI fonts, Mermaid).
-- Each versioned release hosts `MotStar-<ver>.dmg`, `MotStar-v<ver>-macOS.zip`,
-  `allow-dmg.sh` and `install.sh` (one-line installer; asset uploaded as
-  `install-motstar.sh` from `scripts/install.sh`).
+  (highlight.js, KaTeX + data-URI fonts, Mermaid); they are committed, so this
+  only runs when regenerating them.
+- `scripts/design/` holds the one-off branding generators (star logo,
+  rounding, blue softening, icon scaling) used to produce the committed
+  artwork; not part of any build.
+- The DMG is code-signed, notarized and stapled; the app inside is signed,
+  notarized and stapled too, so both pass strict Gatekeeper assessment
+  (`spctl --context primary-signature`). Releases ship no quarantine-bypass
+  helper — `install.sh` leaves quarantine intact and verifies the assessment.
+- Each versioned release hosts `MotStar-<ver>.dmg`, `MotStar-v<ver>-macOS.zip`
+  and `install-motstar.sh` (one-line installer, from `scripts/install.sh`).
 - Install command:
   `curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash`
 - 40 passing unit tests cover: file-type registry (incl. code-file

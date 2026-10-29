@@ -212,11 +212,11 @@ if [ "$PUBLISH" -eq 1 ]; then
     [ -n "$NOTES" ] && NOTES_ARGS=(--notes-file "$NOTES")
 
     if gh release view "$TAG" -R "$REPO_SLUG" >/dev/null 2>&1; then
-        gh release upload "$TAG" "$DMG" "$ZIP" scripts/allow-dmg.sh /tmp/install-motstar.sh -R "$REPO_SLUG" --clobber
+        gh release upload "$TAG" "$DMG" "$ZIP" /tmp/install-motstar.sh -R "$REPO_SLUG" --clobber
         gh release edit "$TAG" -R "$REPO_SLUG" --draft=false --latest "${NOTES_ARGS[@]}"
     else
         gh release create "$TAG" -R "$REPO_SLUG" --title "MotStar $VERSION" --latest "${NOTES_ARGS[@]}"
-        gh release upload "$TAG" "$DMG" "$ZIP" scripts/allow-dmg.sh /tmp/install-motstar.sh -R "$REPO_SLUG" --clobber
+        gh release upload "$TAG" "$DMG" "$ZIP" /tmp/install-motstar.sh -R "$REPO_SLUG" --clobber
     fi
     RELEASE_URL=$(gh release view "$TAG" -R "$REPO_SLUG" --json url --jq .url 2>/dev/null || echo "")
     echo "==> Release ready: ${RELEASE_URL:-$TAG}"

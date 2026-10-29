@@ -97,9 +97,15 @@ echo "==> Installing to $DEST"
 ditto "$SRC_APP" "$DEST"
 hdiutil detach "$TMP/mnt" -quiet >/dev/null 2>&1 || true
 
-# Releases are notarized and stapled, so Gatekeeper accepts them as-is. Keep
-# clearing the quarantine flag as a safety net for older builds.
-xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+# Releases are Developer ID signed, notarized and stapled, so Gatekeeper accepts
+# them untouched. Quarantine is deliberately left in place — stripping it would
+# bypass the exact check that makes these builds trustworthy. Just surface it if
+# the assessment fails.
+if spctl --assess --type execute "$DEST" >/dev/null 2>&1; then
+    echo "==> Gatekeeper assessment: accepted"
+else
+    echo "warning: Gatekeeper did not accept $DEST — the download may be damaged" >&2
+fi
 
 echo "==> Launching MotStar"
 open "$DEST"
