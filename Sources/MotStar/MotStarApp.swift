@@ -209,6 +209,9 @@ struct MotStarCommands: Commands {
             Button("Link") { app.applyMarkdownFormat(.link) }
                 .keyboardShortcut("k", modifiers: [.command, .shift])
             Button("Image") { app.applyMarkdownFormat(.image) }
+            Button("Paste Image from Clipboard") { app.insertClipboardImage() }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+                .disabled(app.paneMode != .editor || app.activeDocument == nil)
         }
 
         // App menu: About

@@ -1098,9 +1098,17 @@ final class AppState: ObservableObject {
         insertMarkdown("![\(alt)](\(path))")
     }
 
+    /// Pastes a clipboard image: saves it into `images/` beside the document
+    /// being edited and inserts a relative link at the caret.
+    ///
+    /// Returns `false` when there is no editor or no image on the clipboard.
+    @discardableResult
+    func insertClipboardImage() -> Bool {
+        (activeEditorTextView as? MarkdownEditorTextView)?.insertPastedImage() ?? false
+    }
+
     /// Inserts `[text](path)` choosing any file with a native open panel.
-    private func insertFileLinkIntoEditor(selection: String) {
-        guard let document = activeDocument else { return }
+    private func insertFileLinkIntoEditor(selection: String) {        guard let document = activeDocument else { return }
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
@@ -1113,8 +1121,7 @@ final class AppState: ObservableObject {
     }
 
     /// Relative to the document folder when possible, else the absolute path.
-    private func insertedPath(for fileURL: URL, relativeTo base: URL) -> String {
-        let filePath = fileURL.path
+    private func insertedPath(for fileURL: URL, relativeTo base: URL) -> String {        let filePath = fileURL.path
         let basePath = base.path
         if filePath.hasPrefix(basePath + "/") {
             let relative = String(filePath.dropFirst(basePath.count + 1))

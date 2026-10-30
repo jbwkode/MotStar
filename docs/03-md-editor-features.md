@@ -81,8 +81,9 @@ inline-link CSS, more emoji coverage as needed.
 **Phase 3 — Obsidian conveniences:** wikilinks/embeds across root folders ✅
 (`[[note]]`, `![[image.png]]`, click-to-open in-app), tags styling ✅,
 definition lists ✅, editor niceties: markdown format toolbar + Format menu
-✅, word-wrap toggle (⌥⌘W) ✅, focus mode (⌥⌘F) ✅. Not yet: line numbers,
-live split edit/preview, backlinks panel (out of scope).
+✅, word-wrap toggle (⌥⌘W) ✅, focus mode (⌥⌘F) ✅, paste images from the
+clipboard into an `images/` folder beside the note (⌘V / ⇧⌘V) ✅. Not yet:
+line numbers, live split edit/preview, backlinks panel (out of scope).
 
 ## 5. Open decisions for the user
 

@@ -30,7 +30,9 @@ Markdown, text, source code, PDF, Office documents, images — and edit
   (`![[image.png]]`) — all rendered **offline**, no network required
 - **Built-in editor** — create, edit and save `.md`/`.txt`; Edit/Preview
   toggle, dirty-state tracking, **discard/revert unsaved edits** (⌥⌘R),
-  markdown format tools, focus mode
+  markdown format tools, focus mode; **paste a screenshot straight into the
+  note** (saved to an `images/` folder beside the file, timestamped, with the
+  relative link inserted)
 - **Syntax-highlighted code viewer** — source files open as readable,
   colour-coded documents (Swift, Python, JS/TS, C/C++, Go, Rust, shell, …)
   with the language auto-detected

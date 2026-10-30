@@ -138,10 +138,15 @@ struct SourceEditorView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(document: document) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        guard let textView = scrollView.documentView as? NSTextView else {
-            return scrollView
-        }
+        let scrollView = NSScrollView()
+        let textView = MarkdownEditorTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 600))
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.autoresizingMask = [.width]
+        scrollView.documentView = textView
+        scrollView.drawsBackground = true
+        scrollView.backgroundColor = .textBackgroundColor
+        textView.documentURL = document.url
 
         textView.delegate = context.coordinator
         textView.isRichText = false
@@ -173,7 +178,11 @@ struct SourceEditorView: NSViewRepresentable {
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
+        guard let textView = scrollView.documentView as? MarkdownEditorTextView else { return }
+
+        if textView.documentURL != document.url {
+            textView.documentURL = document.url
+        }
 
         if context.coordinator.lastRevision != document.revision {
             // The document was replaced from disk (initial load or a revert):
@@ -236,5 +245,50 @@ struct SourceEditorView: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             document.text = textView.string
         }
+    }
+}
+
+/// Source editor text view that turns a pasted clipboard image into a file
+/// beside the document (in `images/`) and inserts a relative Markdown link,
+/// so pasted screenshots survive after the clipboard changes.
+final class MarkdownEditorTextView: NSTextView {
+    /// File being edited — pasted images land in the `images/` folder next to it.
+    var documentURL: URL?
+
+    /// A plain-text `NSTextView` considers an image-only pasteboard
+    /// unreadable, so Edit ▸ Paste is greyed out and ⌘V never reaches
+    /// `paste(_:)`. Advertise Paste whenever the clipboard holds an image.
+    override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+        if item.action == #selector(NSTextView.paste(_:)),
+           ClipboardImage.hasImage(on: .general) {
+            return true
+        }
+        return super.validateUserInterfaceItem(item)
+    }
+
+    override func paste(_ sender: Any?) {
+        if !insertPastedImage() {
+            super.paste(sender)
+        }
+    }
+
+    /// Saves the clipboard image into `images/` beside `documentURL` and
+    /// inserts a relative link at the caret. Returns `false` when the
+    /// clipboard has no image, so callers can fall back to a text paste.
+    @discardableResult
+    func insertPastedImage() -> Bool {
+        guard let documentURL,
+              let png = ClipboardImage.pngData(from: .general) else {
+            return false
+        }
+        do {
+            let path = try ImagePasteStore.save(png, beside: documentURL)
+            insertText("![](\(path))", replacementRange: selectedRange())
+        } catch {
+            AppState.shared.activeAlert = AlertItem(
+                title: "Paste Image",
+                message: "Could not save the pasted image: \(error.localizedDescription)")
+        }
+        return true
     }
 }
