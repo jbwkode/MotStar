@@ -11,7 +11,7 @@ MotStar is entirely local: no accounts, no cloud, no telemetry. Nothing leaves
 your Mac unless you explicitly share, email or export a file.
 
 - **Requires:** macOS 14 (Sonoma) or later, Apple Silicon or Intel
-- **Version:** 0.3.14
+- **Version:** 0.3.15
 - **Author:** John B. Walsh — [john.b.walsh@gmail.com](mailto:john.b.walsh@gmail.com)
 
 > Open this manual at any time with **Help → MotStar User Manual** (⌘?).
@@ -60,7 +60,7 @@ any existing copy and launches the app:
 curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.sh | bash
 ```
 
-Pin a version with `VERSION=v0.3.14 bash install.sh`. To remove MotStar, quit
+Pin a version with `VERSION=v0.3.15 bash install.sh`. To remove MotStar, quit
 it and drag **MotStar.app** from Applications to the Trash.
 
 Your settings live in `~/Library/Preferences/com.motstar.mac.plist` and are
