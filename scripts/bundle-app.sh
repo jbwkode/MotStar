@@ -30,6 +30,11 @@ if ls Resources/appicon-source.* >/dev/null 2>&1; then
     cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
 
+# User manual ships in the bundle so Help → MotStar User Manual works offline.
+if [ -f docs/USER-MANUAL.md ]; then
+    cp docs/USER-MANUAL.md "$APP/Contents/Resources/UserManual.md"
+fi
+
 # App resources (AboutLogo, bundled web assets incl. mermaid.min.js)
 if [ -d "Sources/MotStar/Resources" ]; then
     cp -R Sources/MotStar/Resources/. "$APP/Contents/Resources/"

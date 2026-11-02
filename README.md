@@ -139,10 +139,14 @@ swift test
 | ⌘+ / ⌘− / ⌘0 | Zoom in / out / actual size (reader & editor) |
 | ⌥⌘F / ⌥⌘W | Focus mode / Word wrap |
 | ⌘, | Settings (theme, text size, file sort order, …) |
+| ⌘? | User manual |
 | ⌘B ⌘I ⌥⌘1-3 ⇧⌘K | Bold / Italic / Headings / Link |
 
 ## Documentation
 
+- [`docs/USER-MANUAL.md`](docs/USER-MANUAL.md) — **user manual**: install,
+  browsing, editing, images, export, shortcuts, troubleshooting. Also built
+  into the app under **Help → MotStar User Manual** (⌘?), available offline
 - [`docs/01-product-specification.md`](docs/01-product-specification.md) —
   agreed product specification
 - [`docs/02-software-design.md`](docs/02-software-design.md) — architecture,

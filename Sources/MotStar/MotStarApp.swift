@@ -214,6 +214,14 @@ struct MotStarCommands: Commands {
                 .disabled(app.paneMode != .editor || app.activeDocument == nil)
         }
 
+        // Help menu: the user manual ships inside the app, so this works offline.
+        CommandGroup(replacing: .help) {
+            Button("MotStar User Manual") {
+                app.openUserManual()
+            }
+            .keyboardShortcut("?", modifiers: .command)
+        }
+
         // App menu: About
         CommandGroup(replacing: .appInfo) {
             Button("About MotStar") {

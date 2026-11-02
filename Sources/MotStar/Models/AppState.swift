@@ -189,7 +189,15 @@ final class AppState: ObservableObject {
 
     var isSelectionEditable: Bool {
         guard let kind = selectedKind else { return false }
-        return Self.isEditable(kind)
+        guard Self.isEditable(kind) else { return false }
+        // Files shipped inside the app bundle (the user manual) are read-only:
+        // editing them would try to write into the bundle.
+        if let url = selectedURL,
+           let resources = Self.bundledResourcesPath,
+           url.standardizedFileURL.path.hasPrefix(resources + "/") {
+            return false
+        }
+        return true
     }
 
     /// Draft text of the selected file when an unsaved editor document exists.
@@ -250,6 +258,13 @@ final class AppState: ObservableObject {
 
     /// Selects a file, prompting about unsaved changes in the editor first.
     func selectFile(_ url: URL) {
+        selectFile(url, rememberNavigation: true)
+    }
+
+    /// `rememberNavigation` is false for files we open on the user's behalf
+    /// (the manual), so the new-file panel keeps pointing at their folder
+    /// rather than the app bundle.
+    private func selectFile(_ url: URL, rememberNavigation: Bool) {
         guard url != selectedURL || activeDocument != nil else { return }
         if let doc = activeDocument, doc.isDirty, doc.url != url {
             let response = confirmUnsavedChanges()
@@ -268,7 +283,39 @@ final class AppState: ObservableObject {
         activeDocument = nil
         selectedURL = url
         paneMode = .preview
-        rememberDirectory(url)
+        if rememberNavigation { rememberDirectory(url) }
+    }
+
+    // MARK: Help
+
+    /// Opens the bundled user manual in the preview pane. Falls back to the
+    /// repo copy when running unbundled, then to the online version.
+    func openUserManual() {
+        if let url = Self.userManualURL() {
+            selectFile(url, rememberNavigation: false)
+            markdownDisplayMode = .formatted
+            paneMode = .preview
+            return
+        }
+        if let web = URL(string: "https://github.com/jbwkode/MotStar/blob/main/docs/USER-MANUAL.md") {
+            NSWorkspace.shared.open(web)
+        }
+    }
+
+    /// Resources directory of the packaged app, used to keep bundle contents
+    /// read-only.
+    private static let bundledResourcesPath: String? = {
+        Bundle.main.resourceURL?.standardizedFileURL.path
+    }()
+
+    /// The manual as shipped inside the app, or the repo copy for `swift run`.
+    private static func userManualURL() -> URL? {
+        if let bundled = Bundle.main.url(forResource: "UserManual", withExtension: "md") {
+            return bundled
+        }
+        let local = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("docs/USER-MANUAL.md")
+        return FileManager.default.fileExists(atPath: local.path) ? local : nil
     }
 
     /// Expands the tree along the folder path to a file and selects it.
