@@ -50,7 +50,7 @@ Markdown, text, source code, PDF, Office documents, images — and edit
 
 ## Install (from the Release)
 
-1. Go to the **Releases** page and download **`MotStar-0.3.13.dmg`**
+1. Go to the **Releases** page and download **`MotStar-0.3.14.dmg`**
    (a `.zip` of the app is also available).
 2. Open the DMG and drag **MotStar.app** onto the **Applications** shortcut
    inside the window (or drag it into your Applications folder manually).
@@ -71,7 +71,7 @@ curl -sL https://raw.githubusercontent.com/jbwkode/MotStar/main/scripts/install.
 
 The script fetches the latest DMG, installs to /Applications (backing up any
 existing copy) and launches MotStar.
-Pin a specific release with `VERSION=v0.3.13`. Anonymous downloads work with no
+Pin a specific release with `VERSION=v0.3.14`. Anonymous downloads work with no
 setup — no token, no account.
 
 ### Email via Outlook (optional)
