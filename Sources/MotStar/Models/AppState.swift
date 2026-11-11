@@ -286,6 +286,26 @@ final class AppState: ObservableObject {
         if rememberNavigation { rememberDirectory(url) }
     }
 
+    /// Opens a file handed to us by LaunchServices (Finder double-click or
+    /// "Open With"). If its folder is not already a root, add it so the file
+    /// appears in the sidebar, then select and reveal it.
+    func openExternalFile(_ url: URL) {
+        let std = url.standardizedFileURL
+        guard FileManager.default.fileExists(atPath: std.path) else { return }
+        if rootFolder(containing: std) == nil {
+            addFolders(urls: [std.deletingLastPathComponent()])
+        }
+        selectFile(std)
+        if let root = rootFolder(containing: std) {
+            expandedPaths.insert(root.path)
+            var dir = std.deletingLastPathComponent()
+            while dir.path != root.path, dir.path.hasPrefix(root.path + "/") {
+                expandedPaths.insert(dir.path)
+                dir = dir.deletingLastPathComponent()
+            }
+        }
+    }
+
     // MARK: Help
 
     /// Opens the bundled user manual in the preview pane. Falls back to the

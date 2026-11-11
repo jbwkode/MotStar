@@ -1,8 +1,10 @@
 import SwiftUI
+import AppKit
 
 @main
 struct MotStarApp: App {
     @StateObject private var app = AppState.shared
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         WebKitImageProbe.runIfRequested()
@@ -13,6 +15,7 @@ struct MotStarApp: App {
             ContentView()
                 .environmentObject(app)
                 .frame(minWidth: 780, minHeight: 480)
+                .onOpenURL { app.openExternalFile($0) }
         }
         .defaultSize(width: 1100, height: 700)
         .commands {
@@ -28,6 +31,19 @@ struct MotStarApp: App {
             SettingsView()
                 .environmentObject(app)
         }
+    }
+}
+
+/// Receives Finder "Open With" / double-click documents (kAEOpenDocuments).
+/// SwiftUI's `onOpenURL` covers URL opens; this also covers file opens on
+/// launch, before the first window exists.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            AppState.shared.openExternalFile(url)
+        }
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 

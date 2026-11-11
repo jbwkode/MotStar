@@ -24,6 +24,8 @@ Markdown, text, source code, PDF, Office documents, images — and edit
 - **Two-pane file browser** — recursive, lazily loaded folder tree; folder
   list is remembered between launches; live refresh when files change on disk;
   configurable file ordering (newest-first or A–Z) in Settings (⌘,)
+- **Opens from Finder** — double-click a `.md`/`.markdown` file (or *Open With*
+  → MotStar); its folder is added to the tree and the file opens in the preview
 - **Markdown preview** — tables, task lists, strikethrough, footnotes, code
   highlighting, **Mermaid diagrams**, **KaTeX maths**, emoji shortcodes,
   Obsidian-style **callouts**, **wikilinks** (`[[note]]`) and **embeds**
