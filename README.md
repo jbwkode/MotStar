@@ -47,6 +47,10 @@ Markdown, text, source code, PDF, Office documents, images — and edit
 - **Print & Export as PDF** from any file type
 - **Share** via the Apple share sheet; **Email** the selected file through
   Microsoft Outlook
+- **OneDrive edit links** — for a file in a synced OneDrive/SharePoint folder,
+  Email can send a Microsoft Graph **edit link** instead of attaching it
+  (device-code sign-in; set the Entra app client ID in Settings → OneDrive
+  sharing)
 - **Quick-find** (⌘F) across all your folders
 - 100% local: no accounts, no cloud, no telemetry
 

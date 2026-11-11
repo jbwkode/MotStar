@@ -4,6 +4,8 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage(FileSortMode.storageKey) private var sortMode: FileSortMode = .newestFirst
     @AppStorage(AppTheme.storageKey) private var theme: AppTheme = .system
+    @AppStorage(GraphConfig.clientIDKey) private var graphClientID = ""
+    @AppStorage(GraphConfig.tenantKey) private var graphTenant = ""
     @EnvironmentObject private var app: AppState
 
     var body: some View {
@@ -66,6 +68,25 @@ struct SettingsView: View {
                 Text("Folders are always sorted alphabetically first; this setting controls how files within each folder are ordered.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("OneDrive sharing") {
+                TextField("Application (client) ID", text: $graphClientID)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Tenant (optional — defaults to common)", text: $graphTenant)
+                    .textFieldStyle(.roundedBorder)
+                Button("Sign out of Microsoft") {
+                    OneDriveShareService.shared.signOut()
+                }
+                Text("""
+                Lets the Email button offer a OneDrive edit link for synced files. \
+                Create an Entra ID app registration with “Allow public client flows” \
+                enabled and the delegated Microsoft Graph permission Files.ReadWrite, \
+                then paste its Application (client) ID here. Sign-in uses the device \
+                code flow; tokens are stored in the macOS Keychain.
+                """)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

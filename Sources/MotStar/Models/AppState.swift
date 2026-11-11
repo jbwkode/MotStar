@@ -921,6 +921,27 @@ final class AppState: ObservableObject {
 
     func emailSelectedFile() {
         guard let url = selectedURL else { return }
+        if OneDriveShareService.locate(url) != nil, GraphConfig.isConfigured {
+            let alert = NSAlert()
+            alert.messageText = "This file is in OneDrive"
+            alert.informativeText = "Send an edit link instead of attaching the file?"
+            alert.addButton(withTitle: "Send edit link")
+            alert.addButton(withTitle: "Attach file")
+            alert.addButton(withTitle: "Cancel")
+            switch alert.runModal() {
+            case .alertFirstButtonReturn:
+                sendOneDriveLink(url)
+            case .alertSecondButtonReturn:
+                attachAndEmail(url)
+            default:
+                break
+            }
+        } else {
+            attachAndEmail(url)
+        }
+    }
+
+    private func attachAndEmail(_ url: URL) {
         EmailService.email(url) { [weak self] result in
             guard let self else { return }
             switch result {
@@ -932,6 +953,63 @@ final class AppState: ObservableObject {
                     self.presentAutomationGuidance()
                 } else {
                     self.activeAlert = AlertItem(title: "Email", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    /// Creates a Microsoft Graph edit link and composes an Outlook message
+    /// with the link in the body (no attachment).
+    private func sendOneDriveLink(_ url: URL) {
+        OneDriveShareService.shared.createEditLink(for: url) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let link):
+                EmailService.email(url, body: "Edit link: \(link.absoluteString)", attach: false) { result in
+                    if case .failure(let error) = result {
+                        self.activeAlert = AlertItem(title: "Email", message: error.localizedDescription)
+                    }
+                }
+            case .failure(let error):
+                if let shareError = error as? OneDriveShareError,
+                   case .authRequired = shareError {
+                    self.signInToOneDrive { [weak self] in self?.sendOneDriveLink(url) }
+                } else {
+                    self.activeAlert = AlertItem(title: "OneDrive", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    /// Device-code sign-in: shows the code, opens the Microsoft page, and polls
+    /// until the token arrives, then runs `then`.
+    private func signInToOneDrive(then next: @escaping () -> Void) {
+        OneDriveShareService.shared.startDeviceCode { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .failure(let error):
+                self.activeAlert = AlertItem(title: "OneDrive", message: error.localizedDescription)
+            case .success(let info):
+                let alert = NSAlert()
+                alert.messageText = "Sign in to Microsoft"
+                alert.informativeText = """
+                Go to \(info.verificationURL.absoluteString) and enter the code:
+
+                \(info.userCode)
+                """
+                alert.addButton(withTitle: "Copy code & open browser")
+                alert.addButton(withTitle: "Cancel")
+                guard alert.runModal() == .alertFirstButtonReturn else { return }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(info.userCode, forType: .string)
+                NSWorkspace.shared.open(info.verificationURL)
+                OneDriveShareService.shared.pollForToken(info) { [weak self] pollResult in
+                    switch pollResult {
+                    case .success:
+                        next()
+                    case .failure(let error):
+                        self?.activeAlert = AlertItem(title: "OneDrive", message: error.localizedDescription)
+                    }
                 }
             }
         }

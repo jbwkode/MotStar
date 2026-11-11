@@ -42,7 +42,8 @@ enum EmailService {
         }
     }
 
-    static func email(_ url: URL, completion: @escaping (Result<Void, Error>) -> Void) {
+    static func email(_ url: URL, body: String? = nil, attach: Bool = true,
+                      completion: @escaping (Result<Void, Error>) -> Void) {
         let outlookInstalled = NSWorkspace.shared
             .urlForApplication(withBundleIdentifier: "com.microsoft.Outlook") != nil
 
@@ -51,7 +52,7 @@ enum EmailService {
             return
         }
 
-        switch runOutlookScript(for: url) {
+        switch runOutlookScript(for: url, body: body, attach: attach) {
         case .success:
             completion(.success(()))
         case .failure(let error):
@@ -76,14 +77,20 @@ enum EmailService {
     /// Automation entry. A properly signed helper (`/usr/bin/osascript`,
     /// Apple-signed) is attributed to its *responsible process* — MotStar —
     /// which makes the prompt appear and creates the Automation record.
-    private static func runOutlookScript(for url: URL) -> Result<Void, EmailError> {
+    private static func runOutlookScript(for url: URL, body: String?, attach: Bool) -> Result<Void, EmailError> {
         let fileName = url.lastPathComponent
         let subject = "MotStar: \(fileName)"
+        let content = escape(body ?? "")
+        let attachment = attach
+            ? """
+                    make new attachment with properties {file:(POSIX file "\(escape(url.path))" as alias)}
+            """
+            : ""
         let script = """
         tell application "Microsoft Outlook"
-            set theMessage to make new outgoing message with properties {subject:"\(escape(subject))", content:""}
+            set theMessage to make new outgoing message with properties {subject:"\(escape(subject))", content:"\(content)"}
             tell theMessage
-                make new attachment with properties {file:(POSIX file "\(escape(url.path))" as alias)}
+        \(attachment)
             end tell
             open theMessage
             activate
