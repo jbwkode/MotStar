@@ -93,6 +93,12 @@ A toolbar button above the preview pane composes an email to the selected file
 already attached, ready for the user to address and send. **[?]** Behaviour
 when Outlook is not installed — see Q2.
 
+### FR-11b OneDrive edit link
+When the selected file is inside a OneDrive/SharePoint sync folder, Email
+offers to send a Microsoft Graph **edit link** instead of attaching it. Needs
+an Entra ID application (client) ID set in Settings → OneDrive sharing and a
+device-code sign-in; falls back to attaching on any error. See ADR-010.
+
 ### FR-12 Share button (Apple share sheet)
 A toolbar button beside Email opens the standard macOS share sheet
 (`NSSharingServicePicker`) for the selected file, exposing Apple's built-in
@@ -169,8 +175,9 @@ Notes:
   are read); large folders (10k+ entries) must not freeze the UI.
 - **Reliability:** a folder that becomes unavailable (drive disconnected) must
   not crash the app — show it greyed with an error state.
-- **Privacy:** fully local. No telemetry, no network calls, no document
-  content leaves the machine (except when the user explicitly emails/shares).
+- **Privacy:** local by default. No telemetry; no document content leaves the
+  machine except when the user explicitly emails/shares or asks for a OneDrive
+  edit link (which calls Microsoft Graph). Those actions are opt-in.
 - **Accessibility:** keyboard navigation of the tree; VoiceOver labels on
   markers.
 
@@ -179,7 +186,7 @@ Notes:
 - File editing, rename, delete, move.
 - Full-text search / tags / favourites.
 - Cloud folders (OneDrive/Drive native connectors) — though any local folder
-  mounted on disk works.
+  mounted on disk works. *(Exception: the FR-11b OneDrive edit link, ADR-010.)*
 - Windows/Linux versions.
 
 ## 8. Assumptions (to be validated)
