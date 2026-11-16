@@ -90,6 +90,12 @@ enum PrintExportService {
             }
             return try await Self.quickLookPDF(url: url)
         case .pptx, .xlsx:
+            // Quick Look only snapshots page 1. Ask PowerPoint/Excel for a
+            // full multi-page export when it is installed; otherwise fall back
+            // to the single-page snapshot.
+            if let data = await OfficeAppExport.pdfData(for: url) {
+                return data
+            }
             return try await Self.quickLookPDF(url: url)
         case .image:
             return try Self.imagePDF(url: url)

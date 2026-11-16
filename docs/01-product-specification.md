@@ -109,15 +109,18 @@ definitions.
 ### FR-13 Print
 A **Print** toolbar button prints the selected file through the standard
 macOS print dialog (paper size/margins follow the document CSS). Markdown and
-text print as paginated, formatted documents; PDFs print directly; images print directly; PPTX/XLSX and other types print from their Quick Look
-representation. DOCX prints from its full-document PDF conversion.
+text print as paginated, formatted documents; PDFs print directly; images print directly; DOCX prints from its full-document PDF conversion. PPTX
+and XLSX print the full document through PowerPoint/Excel when installed,
+otherwise from their Quick Look representation; other types print from Quick
+Look.
 
 ### FR-14 Export as PDF
 An **Export PDF** toolbar button saves the selected file as a PDF via the
 standard save panel: Markdown/text are rendered to a paginated A4 PDF with
 the formatted styling; PDFs are saved as a copy; images are wrapped at full
-resolution; DOCX exports the full document (all pages); PPTX/XLSX and other
-types export a Quick Look snapshot page.
+resolution; DOCX exports the full document (all pages); PPTX/XLSX export every slide/sheet
+through PowerPoint/Excel when installed (Quick Look first-page snapshot
+otherwise); other types export a Quick Look snapshot page.
 
 ### FR-15 About window
 The app menu (MotStar → About MotStar) opens an About window showing the

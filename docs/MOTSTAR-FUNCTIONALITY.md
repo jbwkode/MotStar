@@ -189,7 +189,9 @@ Markdown pages; links open in the default browser via navigation policy).
   - PDF: byte-for-byte copy.
   - Images: full-resolution single page.
   - Word: full document, paginated (all pages).
-  - PPTX/XLSX/other: Quick Look snapshot page (best effort, first page).
+  - PPTX/XLSX: exported through PowerPoint/Excel via AppleScript (all slides/
+    sheets) when installed; otherwise a Quick Look snapshot page (first page).
+  - Other: Quick Look snapshot page (best effort).
 - **Email (⇧⌘M):** composes a new **Microsoft Outlook** message with the
   file attached via `/usr/bin/osascript` (Apple events). Requires macOS
   Automation permission — the app guides to System Settings and offers
