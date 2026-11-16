@@ -83,8 +83,9 @@ between the formatted view and the raw Markdown source (monospaced,
 selectable). The default view is Formatted.
 
 ### FR-10 Preview of other supported types
-`.txt` is shown as plain text; PDF, DOCX, PPTX, XLSX, JPG and PNG are shown
-via the standard macOS preview mechanism (Quick Look) in the right pane.
+`.txt` is shown as plain text; PDF, PPTX, XLSX, JPG and PNG are shown via the
+standard macOS preview mechanism (Quick Look) in the right pane. DOCX is
+converted to a paginated PDF and shown fit-width so every page is visible.
 **[?]** Confirm Quick Look is acceptable for Office/PDF/image types — see Q4.
 
 ### FR-11 Email button (Outlook)
@@ -108,14 +109,15 @@ definitions.
 ### FR-13 Print
 A **Print** toolbar button prints the selected file through the standard
 macOS print dialog (paper size/margins follow the document CSS). Markdown and
-text print as paginated, formatted documents; PDFs print directly; images and
-Office/other types print from their Quick Look representation.
+text print as paginated, formatted documents; PDFs print directly; images print directly; PPTX/XLSX and other types print from their Quick Look
+representation. DOCX prints from its full-document PDF conversion.
 
 ### FR-14 Export as PDF
 An **Export PDF** toolbar button saves the selected file as a PDF via the
 standard save panel: Markdown/text are rendered to a paginated A4 PDF with
 the formatted styling; PDFs are saved as a copy; images are wrapped at full
-resolution; Office/other types export a Quick Look snapshot page.
+resolution; DOCX exports the full document (all pages); PPTX/XLSX and other
+types export a Quick Look snapshot page.
 
 ### FR-15 About window
 The app menu (MotStar → About MotStar) opens an About window showing the

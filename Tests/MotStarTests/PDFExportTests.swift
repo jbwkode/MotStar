@@ -83,3 +83,65 @@ final class PDFExportTests: XCTestCase {
         XCTAssertNotNil(PDFDocument(data: data))
     }
 }
+
+/// Word documents preview and export through the same full-document
+/// conversion. Quick Look thumbnails only ever gave page 1, so this guards the
+/// multi-page behaviour the preview relies on.
+final class DocxPDFExportTests: XCTestCase {
+
+    /// Builds a multi-page .docx via `textutil` (the same import path the app
+    /// uses) so the fixture has real OOXML content.
+    private func makeDocx(pages: Int = 4) throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+
+        var html = "<html><body>"
+        for page in 1...pages {
+            html += "<h1>Section \(page)</h1>"
+            for line in 0..<32 {
+                html += "<p>Section \(page) line \(line): the quick brown fox jumps over the lazy dog.</p>"
+            }
+            html += #"<p style="page-break-after:always"></p>"#
+        }
+        html += "</body></html>"
+
+        let htmlURL = dir.appendingPathComponent("source.html")
+        try html.write(to: htmlURL, atomically: true, encoding: .utf8)
+        let docxURL = dir.appendingPathComponent("report.docx")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+        process.arguments = ["-convert", "docx", htmlURL.path, "-output", docxURL.path]
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0, "textutil could not build the fixture")
+        return docxURL
+    }
+
+    @MainActor
+    func testDocxExportContainsEveryPage() async throws {
+        let url = try makeDocx(pages: 4)
+        let data = try await PrintExportService.pdfData(for: url)
+
+        XCTAssertTrue(data.starts(with: Data("%PDF".utf8)))
+        let document = try XCTUnwrap(PDFDocument(data: data))
+        XCTAssertGreaterThanOrEqual(document.pageCount, 4,
+                                    "the whole document must be rendered, not just page 1")
+
+        let text = (0..<document.pageCount)
+            .compactMap { document.page(at: $0)?.string }
+            .joined(separator: "\n")
+        for section in 1...4 {
+            XCTAssertTrue(text.contains("Section \(section)"), "missing section \(section)")
+        }
+    }
+
+    @MainActor
+    func testDocxHTMLIsNonEmpty() throws {
+        let url = try makeDocx(pages: 2)
+        let html = try XCTUnwrap(PrintExportService.docxHTML(url: url))
+        XCTAssertTrue(html.contains("Section 1"))
+        XCTAssertTrue(html.contains("Section 2"))
+    }
+}

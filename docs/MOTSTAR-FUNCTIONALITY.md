@@ -112,7 +112,9 @@ types show with generic icon and Quick Look preview (never hidden).
 - **Plain text:** monospaced, selectable.
 - **Images (jpg/png):** dedicated view — scaled to fit pane; double-click
   toggles 1:1 (scrollable).
-- **PDF/Office/other:** Quick Look (`QLPreviewView`).
+- **Word (.docx):** converted to a paginated PDF (same conversion as export)
+  and shown fit-width, so every page is visible and text is selectable.
+- **PPTX/XLSX/PDF/other:** Quick Look (`QLPreviewView`).
 
 ### Markdown renderer features (the big one)
 Pipeline: optional pre-passes → `swift-markdown` AST → HTML → CSS + bundled
@@ -186,7 +188,8 @@ Markdown pages; links open in the default browser via navigation policy).
   - Text: plain monospaced A4.
   - PDF: byte-for-byte copy.
   - Images: full-resolution single page.
-  - Office/other: Quick Look snapshot page (best effort).
+  - Word: full document, paginated (all pages).
+  - PPTX/XLSX/other: Quick Look snapshot page (best effort, first page).
 - **Email (⇧⌘M):** composes a new **Microsoft Outlook** message with the
   file attached via `/usr/bin/osascript` (Apple events). Requires macOS
   Automation permission — the app guides to System Settings and offers
