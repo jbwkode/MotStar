@@ -323,7 +323,7 @@ final class PageNumberTests: XCTestCase {
 
     func testMultiPagePrintGetsFooterOnEveryPage() {
         let source = makePDF(pages: 3)
-        let stamped = PDFPageNumbers.stamping(source)
+        let stamped = PDFPageNumbers.stamping(source, fileName: "design_app_ux.md")
 
         let doc = CGPDFDocument(CGDataProvider(data: stamped as CFData)!)!
         XCTAssertEqual(doc.numberOfPages, 3)
@@ -348,5 +348,75 @@ final class PageNumberTests: XCTestCase {
         let box = doc.page(at: 1)!.getBoxRect(.mediaBox)
         XCTAssertEqual(box.width, 595, accuracy: 0.5)
         XCTAssertEqual(box.height, 842, accuracy: 0.5)
+    }
+}
+
+/// The print footer carries the document name on the left and the page number
+/// on the right, both within the text margins.
+final class FooterContentTests: XCTestCase {
+
+    private func makePDF(pages: Int) -> Data {
+        let data = NSMutableData()
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let consumer = CGDataConsumer(data: data as CFMutableData)!
+        let ctx = CGContext(consumer: consumer, mediaBox: &box, nil)!
+        for _ in 0..<pages {
+            ctx.beginPDFPage(nil)
+            ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+            ctx.fill(box)
+            ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+            ctx.fill(CGRect(x: 100, y: 600, width: 200, height: 40))
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        return data as Data
+    }
+
+    /// Rows from the bottom that contain ink, plus the min/max column of the
+    /// footer band.
+    private func footerInk(_ page: CGPDFPage) -> (minX: Int, maxX: Int, rows: Int) {
+        let box = page.getBoxRect(.mediaBox)
+        let w = Int(box.width), h = Int(box.height)
+        var buffer = [UInt8](repeating: 255, count: w * h * 4)
+        let ctx = CGContext(data: &buffer, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpaceCreateDeviceRGB(),
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.drawPDFPage(page)
+        var minX = w, maxX = 0, rows = 0
+        for y in 0..<h {
+            for x in 0..<w {
+                let i = (y * w + x) * 4
+                if buffer[i] < 200 || buffer[i + 1] < 200 || buffer[i + 2] < 200 {
+                    minX = min(minX, x); maxX = max(maxX, x); rows += 1
+                }
+            }
+        }
+        return (minX, maxX, rows)
+    }
+
+    func testFooterHasNameLeftAndPageNumberRight() throws {
+        let stamped = PDFPageNumbers.stamping(makePDF(pages: 2), fileName: "design_app_ux.md")
+        let provider = try XCTUnwrap(CGDataProvider(data: stamped as CFData))
+        let doc = try XCTUnwrap(CGPDFDocument(provider))
+        let page = try XCTUnwrap(doc.page(at: 1))
+
+        // Ink must reach both the left margin area (file name) and the right
+        // margin area (page number), and stay inside the 51 pt margins.
+        let ink = footerInk(page)
+        XCTAssertLessThan(ink.minX, 80, "file name should start at the left margin")
+        XCTAssertGreaterThan(ink.maxX, 500, "page number should end at the right margin")
+        XCTAssertGreaterThan(ink.rows, 20, "footer text should be present")
+    }
+
+    func testLongFileNameIsTruncatedWithinMargins() throws {
+        let longName = String(repeating: "very-long-document-name-", count: 8) + ".md"
+        let stamped = PDFPageNumbers.stamping(makePDF(pages: 2), fileName: longName)
+        let provider = try XCTUnwrap(CGDataProvider(data: stamped as CFData))
+        let doc = try XCTUnwrap(CGPDFDocument(provider))
+        let ink = footerInk(try XCTUnwrap(doc.page(at: 1)))
+        XCTAssertGreaterThanOrEqual(ink.minX, 45, "footer must not run off the left margin")
+        XCTAssertLessThanOrEqual(ink.maxX, 550, "footer must not run off the right margin")
     }
 }
