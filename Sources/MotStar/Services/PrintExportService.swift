@@ -178,10 +178,14 @@ enum PrintExportService {
     /// paper and only ever shrink. (Printing a custom NSView with fit
     /// pagination let AppKit *enlarge* A4 content to fill larger paper, which
     /// showed up as a huge print font.) `autoRotate` handles landscape pages.
+    /// Multi-page documents get a "Page n of N" footer, applied to the print
+    /// copy only.
     @MainActor
     static func print(_ url: URL, draftText: String? = nil, wikilinkRoots: [URL] = []) async throws {
         let data = try await pdfData(for: url, draftText: draftText, wikilinkRoots: wikilinkRoots)
-        guard let document = PDFDocument(data: data), document.pageCount > 0 else {
+        // Page numbers are print-only: exports keep the document untouched.
+        let printable = PDFPageNumbers.stamping(data)
+        guard let document = PDFDocument(data: printable), document.pageCount > 0 else {
             throw PrintExportError.cannotLoadDocument
         }
         guard let operation = printOperation(for: document) else {

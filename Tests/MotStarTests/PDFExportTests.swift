@@ -275,3 +275,78 @@ final class PrintScalingTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(body, 9)
     }
 }
+
+/// Page numbers are stamped onto the print copy only, so prints can be
+/// collated. Exported PDFs are unaffected.
+final class PageNumberTests: XCTestCase {
+
+    private func makePDF(pages: Int) -> Data {
+        let data = NSMutableData()
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let consumer = CGDataConsumer(data: data as CFMutableData)!
+        let ctx = CGContext(consumer: consumer, mediaBox: &box, nil)!
+        for _ in 0..<pages {
+            ctx.beginPDFPage(nil)
+            ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+            ctx.fill(box)
+            ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+            ctx.fill(CGRect(x: 100, y: 600, width: 200, height: 40))
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        return data as Data
+    }
+
+    /// Bottom-most dark pixel row (bitmap row 0 is the top of the page, so the
+    /// footer near the bottom margin is a high row index).
+    private func bottomInkRow(_ page: CGPDFPage) -> Int {
+        let box = page.getBoxRect(.mediaBox)
+        let w = Int(box.width), h = Int(box.height)
+        var buffer = [UInt8](repeating: 255, count: w * h * 4)
+        let ctx = CGContext(data: &buffer, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpaceCreateDeviceRGB(),
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.drawPDFPage(page)
+        var last = 0
+        for y in 0..<h {
+            for x in 0..<w {
+                let i = (y * w + x) * 4
+                if buffer[i] < 200 || buffer[i + 1] < 200 || buffer[i + 2] < 200 {
+                    last = y
+                }
+            }
+        }
+        return last
+    }
+
+    func testMultiPagePrintGetsFooterOnEveryPage() {
+        let source = makePDF(pages: 3)
+        let stamped = PDFPageNumbers.stamping(source)
+
+        let doc = CGPDFDocument(CGDataProvider(data: stamped as CFData)!)!
+        XCTAssertEqual(doc.numberOfPages, 3)
+        for index in 1...3 {
+            let page = doc.page(at: index)!
+            // The body block sits near the top of the page; the footer adds
+            // ink close to the bottom edge.
+            XCTAssertGreaterThan(bottomInkRow(page), 800,
+                                 "page \(index) should carry a footer near the bottom margin")
+        }
+    }
+
+    func testSinglePageIsLeftAlone() {
+        let source = makePDF(pages: 1)
+        let stamped = PDFPageNumbers.stamping(source)
+        XCTAssertEqual(stamped, source)
+    }
+
+    func testPageSizeIsPreserved() {
+        let stamped = PDFPageNumbers.stamping(makePDF(pages: 2))
+        let doc = CGPDFDocument(CGDataProvider(data: stamped as CFData)!)!
+        let box = doc.page(at: 1)!.getBoxRect(.mediaBox)
+        XCTAssertEqual(box.width, 595, accuracy: 0.5)
+        XCTAssertEqual(box.height, 842, accuracy: 0.5)
+    }
+}
