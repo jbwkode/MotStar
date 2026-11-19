@@ -44,7 +44,8 @@ Markdown, text, source code, PDF, Office documents, images — and edit
   in Finder (right-click or File menu)
 - **Quick Look** for PDF, Office (Word/Excel/PowerPoint) and image files —
   large images auto-scale to fit
-- **Print & Export as PDF** from any file type
+- **Print & Export as PDF** from any file type — printed pages use an 11 pt
+  body and multi-page prints carry a file name + "Page n of N" footer
 - **Share** via the Apple share sheet; **Email** the selected file through
   Microsoft Outlook
 - **OneDrive edit links** — for a file in a synced OneDrive/SharePoint folder,

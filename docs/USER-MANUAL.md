@@ -268,13 +268,20 @@ bundled inside the app.
 
 | Action | Shortcut | Result |
 |---|---|---|
-| **Print Selected File…** | **⌘P** | Prints the rendered document, paginated to A4 |
+| **Print Selected File…** | **⌘P** | Prints the rendered document, paginated to A4, 11 pt body, with a file name + page number footer (multi-page only) |
 | **Export Selected File as PDF…** | **⇧⌘E** | Writes a paginated, selectable-text PDF |
 | **Export Selected File as HTML…** | **⇧⌘H** | Writes a self-contained HTML file — styles, fonts and images inlined |
 
 Word, code and plain-text files export as properly paginated documents rather
 than one endless page. Export honours unsaved editor changes, so you can
 export a draft without saving it first.
+
+Every document prints with an **11 pt body**, whatever its type, and pages
+are never enlarged to fill the paper. Printed copies of multi-page documents
+carry a footer with the **file name** on the left and **Page n of N** on the
+right; exported PDFs do not (the numbering is print-only). PowerPoint and
+Excel files export every slide/sheet through Microsoft PowerPoint/Excel when
+those apps are installed, and Word documents preview and export in full.
 
 ---
 

@@ -151,8 +151,12 @@ Markdown pages; links open in the default browser via navigation policy).
 11. **Tags:** `#topic` / `#folder/tag` styled in prose (skips code/links).
 12. **Definition lists:** `Term` / `: definition` → `<dl>` (heuristic
     pre-pass outside fences).
-13. **Print CSS:** `@page A4 12mm`, black-on-white cleanup — the same page
-    feeds Print and Export-as-PDF so diagrams/maths/images appear there too.
+13. **Print CSS:** A4 with 18 mm margins and an **11 pt body** (headings are
+    em-based, so they scale with it). WebKit's PDF export maps CSS px 1:1 to
+    points, so print sizes are authored in px. The same page feeds Print and
+    Export-as-PDF, so diagrams/maths/images appear there too. Print-only: a
+    footer is stamped on the final PDF (file name left, "Page n of N" right,
+    8 pt grey) and pages are never enlarged to fill the paper.
 
 ### Editor (Markdown & text)
 - Native `NSTextView` source editor: monospaced 13 pt, undo/redo, find bar,
@@ -182,7 +186,11 @@ Markdown pages; links open in the default browser via navigation policy).
 ## 6. File actions
 
 - **Print (⌘P):** standard macOS print dialog; per-type strategy same as
-  PDF export (below).
+  PDF export (below). Multi-page documents are printed at 100 % (never
+  scaled up to fill the paper, landscape pages rotate) and carry a footer
+  with the document's file name and "Page n of N". Page numbers are
+  print-only — exports are unaffected. Body text prints at 11 pt for every
+  type (plain text and code included).
 - **Export as PDF (⇧⌘E):** save panel → paginated PDF.
   - Markdown: rendered HTML page (full feature set incl. Mermaid/maths).
   - Text: plain monospaced A4.
