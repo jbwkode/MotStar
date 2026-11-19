@@ -145,3 +145,133 @@ final class DocxPDFExportTests: XCTestCase {
         XCTAssertTrue(html.contains("Section 2"))
     }
 }
+
+/// Printing must never blow the document up to fill the paper. A custom
+/// NSView print with fit-pagination used to enlarge A4 content on larger
+/// paper, which users saw as a huge print font.
+final class PrintScalingTests: XCTestCase {
+
+    private var sandbox: URL!
+
+    override func setUpWithError() throws {
+        sandbox = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MotStarPrintScaling-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: sandbox, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        if let sandbox { try? FileManager.default.removeItem(at: sandbox) }
+    }
+
+    /// One A4 page with a 200 × 100 pt black block at (100, 100).
+    private func makeSamplePDF() -> Data {
+        let data = NSMutableData()
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let consumer = CGDataConsumer(data: data as CFMutableData)!
+        let ctx = CGContext(consumer: consumer, mediaBox: &box, nil)!
+        ctx.beginPDFPage(nil)
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(box)
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        ctx.fill(CGRect(x: 100, y: 100, width: 200, height: 100))
+        ctx.endPDFPage()
+        ctx.closePDF()
+        return data as Data
+    }
+
+    @MainActor
+    private func printToFile(_ document: PDFDocument, paper: NSSize) throws -> Data {
+        let info = NSPrintInfo()
+        info.paperSize = paper
+        info.jobDisposition = .save
+        let url = sandbox.appendingPathComponent("print-\(UUID().uuidString).pdf")
+        info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = url
+
+        let operation = try XCTUnwrap(PrintExportService.printOperation(for: document, printInfo: info))
+        operation.showsPrintPanel = false
+        operation.showsProgressPanel = false
+        operation.run()
+        return try Data(contentsOf: url)
+    }
+
+    /// Bounding box (in points) of non-white pixels on page 1.
+    private func inkBounds(_ data: Data) throws -> CGRect {
+        let document = try XCTUnwrap(PDFDocument(data: data))
+        let page = try XCTUnwrap(document.page(at: 0))
+        let box = page.bounds(for: .mediaBox)
+        let w = Int(box.width), h = Int(box.height)
+        var buf = [UInt8](repeating: 255, count: w * h * 4)
+        let ctx = CGContext(data: &buf, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpaceCreateDeviceRGB(),
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.drawPDFPage(try XCTUnwrap(document.page(at: 0)?.pageRef))
+        var minX = w, minY = h, maxX = 0, maxY = 0
+        for y in 0..<h {
+            for x in 0..<w {
+                let i = (y * w + x) * 4
+                if buf[i] < 200 || buf[i + 1] < 200 || buf[i + 2] < 200 {
+                    minX = min(minX, x); maxX = max(maxX, x)
+                    minY = min(minY, y); maxY = max(maxY, y)
+                }
+            }
+        }
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    @MainActor
+    func testPrintingOnLargerPaperDoesNotEnlargeContent() throws {
+        let document = try XCTUnwrap(PDFDocument(data: makeSamplePDF()))
+        let printed = try printToFile(document, paper: NSSize(width: 842, height: 1191)) // A3
+        let ink = try inkBounds(printed)
+
+        XCTAssertEqual(ink.width, 200, accuracy: 6,
+                       "content must stay 1:1 (or shrink), never scale up to fill the paper")
+        XCTAssertEqual(ink.height, 100, accuracy: 6)
+    }
+
+    @MainActor
+    func testPrintingOnPaperSizeKeepsPages() throws {
+        let document = try XCTUnwrap(PDFDocument(data: makeSamplePDF()))
+        let printed = try printToFile(document, paper: NSSize(width: 595, height: 842))
+        let output = try XCTUnwrap(PDFDocument(data: printed))
+        XCTAssertEqual(output.pageCount, 1)
+        let ink = try inkBounds(printed)
+        XCTAssertEqual(ink.width, 200, accuracy: 6)
+    }
+
+    /// Printed markdown must use document body size. The print CSS previously
+    /// reused the on-screen reading size (15 px, which WebKit maps 1:1 to
+    /// points), so printed pages came out with very large text.
+    @MainActor
+    func testPrintedMarkdownUsesDocumentBodySize() async throws {
+        let url = sandbox.appendingPathComponent("body-size.md")
+        try """
+        # Heading
+
+        Body text used to measure the printed font size on the page.
+
+        - one
+        - two
+        """.write(to: url, atomically: true, encoding: .utf8)
+
+        let data = try await PrintExportService.pdfData(for: url)
+        let document = try XCTUnwrap(PDFDocument(data: data))
+        let page = try XCTUnwrap(document.page(at: 0))
+        let attributed = page.attributedString ?? NSAttributedString()
+
+        var sizes: [CGFloat] = []
+        attributed.enumerateAttribute(.font,
+                                      in: NSRange(location: 0, length: attributed.length)) { value, range, _ in
+            if let font = value as? NSFont, range.length > 0 {
+                sizes.append(font.pointSize)
+            }
+        }
+        let body = try XCTUnwrap(sizes.filter { $0 < 14 }.max(),
+                                 "no body text found on the printed page")
+        XCTAssertLessThanOrEqual(body, 12.5,
+                                 "body text must print at document size (~11 pt), not the 15 px screen size")
+        XCTAssertGreaterThanOrEqual(body, 9)
+    }
+}

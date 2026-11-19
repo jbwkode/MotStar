@@ -29,7 +29,10 @@ enum MarkdownHTML {
     /// `wikilinkRoots` (Obsidian-style vault folders) enable `[[note]]`
     /// links and `![[image.png]]` embeds. `baseFontSize` scales the body
     /// text (headings are em-based, so they scale proportionally).
-    static func document(markdown: String, baseDirectory: URL, wikilinkRoots: [URL] = [], baseFontSize: Double = defaultReadingFontSize) -> String {
+    /// `forPrint` switches the body to points and drops the screen padding, so
+    /// printed pages read at normal document size (11 pt) instead of the
+    /// larger on-screen reading size.
+    static func document(markdown: String, baseDirectory: URL, wikilinkRoots: [URL] = [], baseFontSize: Double = defaultReadingFontSize, forPrint: Bool = false) -> String {
         // YAML front matter is metadata, not prose: split it off before parsing
         // (otherwise the closing `---` turns the block into a setext heading).
         let front = splitFrontMatter(markdown)
@@ -38,7 +41,7 @@ enum MarkdownHTML {
         enhanced = applyWikilinks(enhanced, baseDirectory: baseDirectory, wikilinkRoots: wikilinkRoots)
         enhanced = applyDefinitionLists(enhanced)
         let body = frontMatterHTML(front.fields) + rewritingRelativeImages(HTMLFormatter.format(enhanced), baseDirectory: baseDirectory)
-        return template(body: body, enriched: true, baseFontSize: baseFontSize)
+        return template(body: body, enriched: true, baseFontSize: baseFontSize, forPrint: forPrint)
     }
 
     /// Load a `.md` file (UTF-8, else UTF-16) and render it for display.
@@ -499,15 +502,24 @@ enum MarkdownHTML {
 
     // MARK: Template
 
-    private static func baseCSS(fontSize: Double) -> String {
-        """
+    /// Body size used when rendering for print/PDF. WebKit's `createPDF`
+    /// maps CSS px 1:1 to PDF points (so `pt` units come out 4/3 too large),
+    /// which is why printed documents specify the size in px here: 11 px in
+    /// this CSS prints as 11 pt — normal document body text.
+    static let printBodySize: Double = 11
+
+    private static func baseCSS(fontSize: Double, forPrint: Bool = false) -> String {
+        let bodySize = forPrint ? "\(Int(printBodySize))px" : "\(Int(fontSize))px"
+        let bodyPadding = forPrint ? "0" : "24px 30px 60px"
+        let bodyLineHeight = forPrint ? "1.45" : "1.65"
+        return """
     :root { color-scheme: light dark; }
     body {
         margin: 0;
-        padding: 24px 30px 60px;
+        padding: \(bodyPadding);
         font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-        font-size: \(Int(fontSize))px;
-        line-height: 1.65;
+        font-size: \(bodySize);
+        line-height: \(bodyLineHeight);
         color: #1d1d1f;
         background: #ffffff;
         overflow-wrap: break-word;
@@ -659,7 +671,7 @@ enum MarkdownHTML {
     """
     }
 
-    private static func template(body: String, enriched: Bool, baseFontSize: Double = defaultReadingFontSize) -> String {
+    private static func template(body: String, enriched: Bool, baseFontSize: Double = defaultReadingFontSize, forPrint: Bool = false) -> String {
         var extraStyles = ""
         var extraScripts = ""
         if enriched {
@@ -690,7 +702,7 @@ enum MarkdownHTML {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-        \(baseCSS(fontSize: baseFontSize))
+        \(baseCSS(fontSize: baseFontSize, forPrint: forPrint))
         </style>
         \(extraStyles)
         </head>
