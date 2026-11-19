@@ -420,3 +420,80 @@ final class FooterContentTests: XCTestCase {
         XCTAssertLessThanOrEqual(ink.maxX, 550, "footer must not run off the right margin")
     }
 }
+
+/// All printed documents use the same 11 pt body size, regardless of type.
+final class PrintBodySizeTests: XCTestCase {
+
+    private var sandbox: URL!
+
+    override func setUpWithError() throws {
+        sandbox = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MotStarBodySize-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: sandbox, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        if let sandbox { try? FileManager.default.removeItem(at: sandbox) }
+    }
+
+    /// The most common font size under 20 pt — i.e. the body text, not headings.
+    private func bodyPointSize(_ data: Data) throws -> CGFloat {
+        let document = try XCTUnwrap(PDFDocument(data: data))
+        var lengths: [CGFloat: Int] = [:]
+        for index in 0..<document.pageCount {
+            guard let attributed = document.page(at: index)?.attributedString else { continue }
+            attributed.enumerateAttribute(.font,
+                                          in: NSRange(location: 0, length: attributed.length)) { value, range, _ in
+                guard let font = value as? NSFont, range.length > 0, font.pointSize < 20 else { return }
+                lengths[font.pointSize, default: 0] += range.length
+            }
+        }
+        return lengths.max { $0.value < $1.value }?.key ?? 0
+    }
+
+    @MainActor
+    private func assertBodyIs11(_ url: URL, file: StaticString = #filePath, line: UInt = #line) async throws {
+        let data = try await PrintExportService.pdfData(for: url)
+        let size = try bodyPointSize(data)
+        XCTAssertEqual(size, 11, accuracy: 0.6,
+                       "\(url.lastPathComponent) should print body text at 11 pt", file: file, line: line)
+    }
+
+    @MainActor
+    func testMarkdownBodyIs11pt() async throws {
+        let url = sandbox.appendingPathComponent("note.md")
+        try "# Title\n\nBody text for the size check.\n".write(to: url, atomically: true, encoding: .utf8)
+        try await assertBodyIs11(url)
+    }
+
+    @MainActor
+    func testPlainTextBodyIs11pt() async throws {
+        let url = sandbox.appendingPathComponent("note.txt")
+        try "Plain text body for the size check.\n".write(to: url, atomically: true, encoding: .utf8)
+        try await assertBodyIs11(url)
+    }
+
+    @MainActor
+    func testCodeBodyIs11pt() async throws {
+        let url = sandbox.appendingPathComponent("sample.swift")
+        try "let answer = 42\nprint(answer)\n".write(to: url, atomically: true, encoding: .utf8)
+        try await assertBodyIs11(url)
+    }
+
+    @MainActor
+    func testWordBodyIs11pt() async throws {
+        let htmlURL = sandbox.appendingPathComponent("body.html")
+        try "<html><body><p>Word body text for the size check.</p></body></html>"
+            .write(to: htmlURL, atomically: true, encoding: .utf8)
+        let docx = sandbox.appendingPathComponent("body.docx")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+        process.arguments = ["-convert", "docx", htmlURL.path, "-output", docx.path]
+        try process.run()
+        process.waitUntilExit()
+        try XCTSkipUnless(process.terminationStatus == 0, "textutil unavailable")
+
+        try await assertBodyIs11(docx)
+    }
+}

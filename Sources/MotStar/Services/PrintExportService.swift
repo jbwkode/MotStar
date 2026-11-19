@@ -73,7 +73,7 @@ enum PrintExportService {
             guard let text = draftText ?? Self.loadText(url) else {
                 throw PrintExportError.cannotReadFile
             }
-            return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 10),
+            return try await renderPaginatedPDF(html: CodeHTML.document(text: text, fontSize: 11),
                                                 settleNanoseconds: 150_000_000)
         case .pdf:
             return try Data(contentsOf: url)
@@ -148,12 +148,19 @@ enum PrintExportService {
         /* WebKit's PDF export maps CSS px 1:1 to points; `pt` would print 4/3
            larger than intended, so sizes are px. */
         body { font-family: -apple-system, 'Helvetica Neue', 'Times New Roman', serif;
-               font-size: 12px; line-height: 1.45; color: #000;
+               font-size: 11px; line-height: 1.45; color: #000;
                margin: 0; padding: 0; }
+        /* textutil emits its own class rules (e.g. p.p1 { font: 12.0px Times }),
+           which outrank a plain body rule — force the body size through. */
+        p, li, div, span, blockquote { font-size: 11px !important; }
         p { margin: 0 0 0.6em; }
         h1, h2, h3, h4 { margin: 1em 0 0.5em; }
+        h1 { font-size: 18px !important; }
+        h2 { font-size: 15px !important; }
+        h3 { font-size: 13px !important; }
+        h4 { font-size: 12px !important; }
         table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
-        td, th { border: 1px solid #bbb; padding: 4px 7px; vertical-align: top; font-size: 11px; }
+        td, th { border: 1px solid #bbb; padding: 4px 7px; vertical-align: top; font-size: 10px !important; }
         img { max-width: 100%; height: auto; }
         @page { size: A4; margin: 0; }
         </style>
@@ -445,7 +452,7 @@ enum TextHTML {
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
         let css = """
-        body { margin: 0; padding: 24px 30px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; line-height: 1.5; color: #111; background: #fff; }
+        body { margin: 0; padding: 24px 30px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; line-height: 1.5; color: #111; background: #fff; }
         pre { white-space: pre-wrap; word-wrap: break-word; }
         @media print { body { padding: 0; } }
         @page { size: A4; margin: 0; }
